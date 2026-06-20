@@ -102,6 +102,30 @@ export function urlEncode(value: string | null | undefined): string {
     .replace(/\//g, '%2F');
 }
 
+// Characters legal in a URI path component per java.net.URI (RFC 2396):
+// unreserved (alphanum + mark) plus the path-specific punctuation. Anything
+// else is UTF-8 percent-encoded by the URI multi-argument constructor.
+const URI_PATH_LEGAL = /[A-Za-z0-9\-_.!~*'():@&=+$,;/]/;
+
+/**
+ * Percent-encodes a path the way `java.net.URI`'s multi-argument constructor
+ * does: e.g. a space becomes `%20` while `+` is left intact. This affects only
+ * how the path is rendered in a URI string; signing uses the decoded path.
+ */
+export function encodeUriPath(path: string): string {
+  let result = '';
+  const bytes = Buffer.from(path, 'utf-8');
+  for (const byte of bytes) {
+    const ch = String.fromCharCode(byte);
+    if (byte < 0x80 && URI_PATH_LEGAL.test(ch)) {
+      result += ch;
+    } else {
+      result += '%' + byte.toString(16).toUpperCase().padStart(2, '0');
+    }
+  }
+  return result;
+}
+
 /**
  * Computes the MD5 of a UTF-8 string and returns it as a hex string.
  *

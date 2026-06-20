@@ -3,7 +3,7 @@ import { createHmac } from 'node:crypto';
 import { Common, GALAXY_V2_PREFIX, MULTIPART_FORM_DATA } from '../common.js';
 import { HttpMethod, SIGN_ALGORITHM_DIGEST, SignAlgorithm, SUB_RESOURCE_SET } from '../enums.js';
 import { GalaxyFDSClientException } from '../errors.js';
-import { parseUri, parseUriParameters, urlEncode } from './utils.js';
+import { encodeUriPath, parseUri, parseUriParameters, urlEncode } from './utils.js';
 
 /**
  * Case-insensitive multimap of HTTP headers, preserving insertion order and
@@ -156,7 +156,9 @@ export const Signer = {
       const objectPart = objectName != null && objectName.length > 0 ? '/' + objectName : '';
       const expiresMillis = expiration instanceof Date ? expiration.getTime() : expiration;
 
-      const path = '/' + bucketName + objectPart;
+      // Encode the path as java.net.URI's constructor would. Signing re-parses
+      // this URI and decodes the path back, so the signature is unaffected.
+      const path = encodeUriPath('/' + bucketName + objectPart);
       const queryParts: string[] = [];
       if (subResources != null && subResources.length > 0) {
         queryParts.push(subResources.join('&'));

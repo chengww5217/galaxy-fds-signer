@@ -12,8 +12,16 @@ export default [
     files: ['**/*.ts'],
     languageOptions: {
       parser: tsparser,
-      ecmaVersion: 2021,
+      ecmaVersion: 2022,
       sourceType: 'module',
+      globals: {
+        Buffer: 'readonly',
+        URL: 'readonly',
+        URLSearchParams: 'readonly',
+        process: 'readonly',
+        console: 'readonly',
+        __dirname: 'readonly',
+      },
     },
     plugins: {
       '@typescript-eslint': tseslint,

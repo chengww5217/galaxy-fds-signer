@@ -1,0 +1,72 @@
+import { describe, expect, it } from 'vitest';
+
+import {
+  BasicFDSCredential,
+  Common,
+  GalaxyFDSClient,
+  HttpMethod,
+  Signer,
+  SubResource,
+} from '../src/index.js';
+
+const ACCESS_ID = 'AKIDEXAMPLEACCESSID';
+const ACCESS_SECRET = 'wJalrXUtnFEMIK7MDENGbPxRfiCYEXAMPLEKEY';
+
+function newClient() {
+  return new GalaxyFDSClient(new BasicFDSCredential(ACCESS_ID, ACCESS_SECRET));
+}
+
+describe('GalaxyFDSClient', () => {
+  it('builds an authorization header matching the Signer', () => {
+    const client = newClient();
+    const uri = Common.DEFAULT_FDS_SERVICE_BASE_URI + 'my-bucket/my-object';
+    const headers = { date: 'Sun, 06 Nov 1994 08:49:37 GMT' };
+    const expected = Signer.getAuthorizationHeader(
+      HttpMethod.GET,
+      uri,
+      headers,
+      ACCESS_ID,
+      ACCESS_SECRET,
+    );
+    expect(client.getAuthorizationHeader(HttpMethod.GET, uri, headers)).toBe(expected);
+  });
+
+  it('defaults the pre-signed URI to the FDS base and GET', () => {
+    const client = newClient();
+    const uri = client.generatePresignedUri('my-bucket', 'my-object', 1700000000000);
+    expect(uri.startsWith(Common.DEFAULT_FDS_SERVICE_BASE_URI + 'my-bucket/my-object?')).toBe(true);
+    expect(uri).toContain(`${Common.GALAXY_ACCESS_KEY_ID}=${ACCESS_ID}`);
+    expect(uri).toContain(`${Common.EXPIRES}=1700000000000`);
+    expect(uri).toContain(`${Common.SIGNATURE}=`);
+  });
+
+  it('accepts a Date expiration equivalently to epoch millis', () => {
+    const client = newClient();
+    const millis = 1700000000000;
+    const fromDate = client.generatePresignedUri('b', 'o', new Date(millis));
+    const fromMillis = client.generatePresignedUri('b', 'o', millis);
+    expect(fromDate).toBe(fromMillis);
+  });
+
+  it('includes a SubResource fragment in the pre-signed URI', () => {
+    const client = newClient();
+    const uri = client.generatePresignedUri('b', 'o', 1700000000000, HttpMethod.GET, [
+      SubResource.ACL,
+    ]);
+    expect(uri).toContain('/b/o?acl&');
+  });
+
+  it('uses the CDN base for generatePresignedCdnUri', () => {
+    const client = newClient();
+    const uri = client.generatePresignedCdnUri('b', 'o', 1700000000000);
+    expect(uri.startsWith(Common.DEFAULT_CDN_SERVICE_URI)).toBe(true);
+  });
+
+  it('honors custom base URIs from options', () => {
+    const client = new GalaxyFDSClient(new BasicFDSCredential(ACCESS_ID, ACCESS_SECRET), {
+      baseUri: 'https://my.endpoint.example.com/',
+    });
+    const uri = client.generatePresignedUri('b', 'o', 1700000000000);
+    expect(uri.startsWith('https://my.endpoint.example.com/b/o?')).toBe(true);
+  });
+});
