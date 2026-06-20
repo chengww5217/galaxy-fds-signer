@@ -1,0 +1,11 @@
+node_modules/
+dist/
+coverage/
+*.log
+.DS_Store
+.idea/
+.vscode/
+*.tsbuildinfo
+
+# Generated Java golden fixtures build artifacts
+test/fixtures/java/*.class
