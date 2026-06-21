@@ -44,7 +44,7 @@
   "license": "Apache-2.0",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/XiaoMi/galaxy-fds-sdk-nodejs.git"
+    "url": "git+https://github.com/chengww5217/galaxy-fds-sdk-nodejs.git"
   },
   "devDependencies": {
     "@eslint/js": "^9.17.0",
