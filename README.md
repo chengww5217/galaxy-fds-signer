@@ -140,19 +140,14 @@ npm run typecheck
 npm run lint
 ```
 
-### Regenerating golden fixtures
+### Golden parity tests
 
-`test/fixtures/golden.json` is produced from the official Java SDK so that the
-Node.js implementation can be checked for exact parity. To regenerate it you
-need a JDK and the FDS jars plus their runtime dependencies (Guava,
-commons-lang, commons-logging):
-
-```bash
-bash test/fixtures/java/generate.sh
-```
-
-Override the jar locations with the `FDS_LIB_DIR`, `GUAVA_JAR`,
-`COMMONS_LANG_JAR`, and `COMMONS_LOGGING_JAR` environment variables.
+`test/golden.test.ts` and `test/utils.test.ts` pin a set of representative
+cases against the output of the official `galaxy-fds-sdk-java` 3.0.48 so the
+Node.js implementation can be checked for exact parity. The expected values are
+hard-coded in the test files — there is no external generation step. If you
+change signing behavior, re-derive the affected expected values from the Java
+SDK and update them inline.
 
 ## License
 

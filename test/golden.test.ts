@@ -1,6 +1,3 @@
-import { readFileSync } from 'node:fs';
-import { fileURLToPath } from 'node:url';
-import { dirname, resolve } from 'node:path';
 import { describe, expect, it } from 'vitest';
 
 import {
@@ -11,16 +8,15 @@ import {
   Signer,
 } from '../src/index.js';
 
-const here = dirname(fileURLToPath(import.meta.url));
+const ACCESS_ID = 'AKIDEXAMPLEACCESSID';
+const ACCESS_SECRET = 'wJalrXUtnFEMIK7MDENGbPxRfiCYEXAMPLEKEY';
 
 interface SignCase {
   name: string;
-  httpMethod: string;
+  httpMethod: HttpMethod;
   uri: string;
   headers: Array<[string, string]>;
-  algorithm: string;
-  accessId: string;
-  accessSecret: string;
+  algorithm: SignAlgorithm;
   expected: {
     stringToSign: string;
     signature: string;
@@ -35,17 +31,219 @@ interface PresignCase {
   objectName: string;
   subResources: string[] | null;
   expiresMillis: number;
-  httpMethod: string;
+  httpMethod: HttpMethod;
   headers: Array<[string, string]> | null;
-  algorithm: string;
-  accessId: string;
-  accessSecret: string;
+  algorithm: SignAlgorithm;
   expected: { uri: string };
 }
 
-const golden = JSON.parse(
-  readFileSync(resolve(here, 'fixtures/golden.json'), 'utf-8'),
-) as { signCases: SignCase[]; presignCases: PresignCase[] };
+// Representative cases pinned against galaxy-fds-sdk-java 3.0.48 output.
+// Each one exercises a distinct facet of the signing rules; the expected
+// values were captured from the reference Java SDK and are intentionally
+// hard-coded so the suite has no external generation step.
+const SIGN_CASES: SignCase[] = [
+  {
+    name: 'get-no-headers',
+    httpMethod: HttpMethod.GET,
+    uri: 'http://files.fds.api.xiaomi.com/my-bucket/my-object',
+    headers: [],
+    algorithm: SignAlgorithm.HmacSHA1,
+    expected: {
+      stringToSign: 'GET\n\n\n\n/my-bucket/my-object',
+      signature: 'PJHrH088tbkMjrkSR6uO6n/wBck=',
+      authorizationHeader: 'Galaxy-V2 AKIDEXAMPLEACCESSID:PJHrH088tbkMjrkSR6uO6n/wBck=',
+    },
+  },
+  {
+    name: 'get-with-date',
+    httpMethod: HttpMethod.GET,
+    uri: 'http://files.fds.api.xiaomi.com/my-bucket/my-object',
+    headers: [['date', 'Sun, 06 Nov 1994 08:49:37 GMT']],
+    algorithm: SignAlgorithm.HmacSHA1,
+    expected: {
+      stringToSign: 'GET\n\n\nSun, 06 Nov 1994 08:49:37 GMT\n/my-bucket/my-object',
+      signature: 'TBmMdrY6ygseQ3mUk1KDg8Ala7A=',
+      authorizationHeader: 'Galaxy-V2 AKIDEXAMPLEACCESSID:TBmMdrY6ygseQ3mUk1KDg8Ala7A=',
+    },
+  },
+  {
+    name: 'put-content-type-md5',
+    httpMethod: HttpMethod.PUT,
+    uri: 'http://files.fds.api.xiaomi.com/my-bucket/my-object',
+    headers: [
+      ['content-md5', '1B2M2Y8AsgTpgAmY7PhCfg=='],
+      ['content-type', 'application/octet-stream'],
+      ['date', 'Sun, 06 Nov 1994 08:49:37 GMT'],
+    ],
+    algorithm: SignAlgorithm.HmacSHA1,
+    expected: {
+      stringToSign:
+        'PUT\n1B2M2Y8AsgTpgAmY7PhCfg==\napplication/octet-stream\nSun, 06 Nov 1994 08:49:37 GMT\n/my-bucket/my-object',
+      signature: '3yZSU7TbLV4jERNvp12cCclLcqU=',
+      authorizationHeader: 'Galaxy-V2 AKIDEXAMPLEACCESSID:3yZSU7TbLV4jERNvp12cCclLcqU=',
+    },
+  },
+  {
+    name: 'xiaomi-date-overrides-date',
+    httpMethod: HttpMethod.GET,
+    uri: 'http://files.fds.api.xiaomi.com/my-bucket/my-object',
+    headers: [
+      ['x-xiaomi-date', 'Sun, 06 Nov 1994 08:49:37 GMT'],
+      ['date', 'Mon, 07 Nov 1994 08:49:37 GMT'],
+    ],
+    algorithm: SignAlgorithm.HmacSHA1,
+    expected: {
+      stringToSign:
+        'GET\n\n\n\nx-xiaomi-date:Sun, 06 Nov 1994 08:49:37 GMT\n/my-bucket/my-object',
+      signature: 'LU3tbLo2KLE+p8/GXncFqLf5dSI=',
+      authorizationHeader: 'Galaxy-V2 AKIDEXAMPLEACCESSID:LU3tbLo2KLE+p8/GXncFqLf5dSI=',
+    },
+  },
+  {
+    name: 'xiaomi-headers-sorted-merged',
+    httpMethod: HttpMethod.PUT,
+    uri: 'http://files.fds.api.xiaomi.com/my-bucket/my-object',
+    headers: [
+      ['x-xiaomi-meta-foo', 'bar'],
+      ['x-xiaomi-acl', 'private'],
+      ['x-xiaomi-meta-foo', 'baz'],
+      ['date', 'Sun, 06 Nov 1994 08:49:37 GMT'],
+    ],
+    algorithm: SignAlgorithm.HmacSHA1,
+    expected: {
+      stringToSign:
+        'PUT\n\n\nSun, 06 Nov 1994 08:49:37 GMT\nx-xiaomi-acl:private\nx-xiaomi-meta-foo:bar,baz\n/my-bucket/my-object',
+      signature: 'RjqEVbwriDJxETn11JCPFXV+KDA=',
+      authorizationHeader: 'Galaxy-V2 AKIDEXAMPLEACCESSID:RjqEVbwriDJxETn11JCPFXV+KDA=',
+    },
+  },
+  {
+    name: 'subresources-sorted',
+    httpMethod: HttpMethod.GET,
+    uri: 'http://files.fds.api.xiaomi.com/my-bucket/my-object?uploadId=abc123&partNumber=2&notsub=ignored&acl',
+    headers: [['date', 'Sun, 06 Nov 1994 08:49:37 GMT']],
+    algorithm: SignAlgorithm.HmacSHA1,
+    expected: {
+      stringToSign:
+        'GET\n\n\nSun, 06 Nov 1994 08:49:37 GMT\n/my-bucket/my-object?acl&partNumber=2&uploadId=abc123',
+      signature: 'bgwXw7MO6S3aQpn1CPRYMBbo2vM=',
+      authorizationHeader: 'Galaxy-V2 AKIDEXAMPLEACCESSID:bgwXw7MO6S3aQpn1CPRYMBbo2vM=',
+    },
+  },
+  {
+    name: 'algorithm-sha256',
+    httpMethod: HttpMethod.GET,
+    uri: 'http://files.fds.api.xiaomi.com/my-bucket/my-object',
+    headers: [['date', 'Sun, 06 Nov 1994 08:49:37 GMT']],
+    algorithm: SignAlgorithm.HmacSHA256,
+    expected: {
+      stringToSign: 'GET\n\n\nSun, 06 Nov 1994 08:49:37 GMT\n/my-bucket/my-object',
+      signature: 'aNIGdQuId3wH9Mqnz8RqtyQJonJZoWw5GP0npSshj1o=',
+      authorizationHeader:
+        'Galaxy-V2 AKIDEXAMPLEACCESSID:aNIGdQuId3wH9Mqnz8RqtyQJonJZoWw5GP0npSshj1o=',
+    },
+  },
+  {
+    name: 'algorithm-md5',
+    httpMethod: HttpMethod.GET,
+    uri: 'http://files.fds.api.xiaomi.com/my-bucket/my-object',
+    headers: [['date', 'Sun, 06 Nov 1994 08:49:37 GMT']],
+    algorithm: SignAlgorithm.HmacMD5,
+    expected: {
+      stringToSign: 'GET\n\n\nSun, 06 Nov 1994 08:49:37 GMT\n/my-bucket/my-object',
+      signature: 'lq+J/JI++NPXUSG/4XPn1g==',
+      authorizationHeader: 'Galaxy-V2 AKIDEXAMPLEACCESSID:lq+J/JI++NPXUSG/4XPn1g==',
+    },
+  },
+  {
+    name: 'expires-in-uri',
+    httpMethod: HttpMethod.GET,
+    uri: 'http://files.fds.api.xiaomi.com/my-bucket/my-object?GalaxyAccessKeyId=AKIDEXAMPLEACCESSID&Expires=1700000000000',
+    headers: [],
+    algorithm: SignAlgorithm.HmacSHA1,
+    expected: {
+      stringToSign: 'GET\n\n\n1700000000000\n/my-bucket/my-object',
+      signature: 'p+qjVTQ54pVld7OUrbO3ge5VinM=',
+      authorizationHeader: 'Galaxy-V2 AKIDEXAMPLEACCESSID:p+qjVTQ54pVld7OUrbO3ge5VinM=',
+    },
+  },
+];
+
+const PRESIGN_CASES: PresignCase[] = [
+  {
+    name: 'presign-get-basic',
+    baseUri: 'http://files.fds.api.xiaomi.com/',
+    bucketName: 'my-bucket',
+    objectName: 'my-object',
+    subResources: null,
+    expiresMillis: 1700000000000,
+    httpMethod: HttpMethod.GET,
+    headers: null,
+    algorithm: SignAlgorithm.HmacSHA1,
+    expected: {
+      uri: 'http://files.fds.api.xiaomi.com/my-bucket/my-object?GalaxyAccessKeyId=AKIDEXAMPLEACCESSID&Expires=1700000000000&Signature=p%2BqjVTQ54pVld7OUrbO3ge5VinM%3D',
+    },
+  },
+  {
+    name: 'presign-get-empty-object',
+    baseUri: 'http://files.fds.api.xiaomi.com/',
+    bucketName: 'my-bucket',
+    objectName: '',
+    subResources: null,
+    expiresMillis: 1700000000000,
+    httpMethod: HttpMethod.GET,
+    headers: null,
+    algorithm: SignAlgorithm.HmacSHA1,
+    expected: {
+      uri: 'http://files.fds.api.xiaomi.com/my-bucket?GalaxyAccessKeyId=AKIDEXAMPLEACCESSID&Expires=1700000000000&Signature=QNE9PNhIxuCnhT9obtZwc2eXOKE%3D',
+    },
+  },
+  {
+    name: 'presign-with-subresources-multi',
+    baseUri: 'http://files.fds.api.xiaomi.com/',
+    bucketName: 'my-bucket',
+    objectName: 'my-object',
+    subResources: ['metadata', 'acl'],
+    expiresMillis: 1700000000000,
+    httpMethod: HttpMethod.GET,
+    headers: null,
+    algorithm: SignAlgorithm.HmacSHA1,
+    expected: {
+      uri: 'http://files.fds.api.xiaomi.com/my-bucket/my-object?metadata&acl&GalaxyAccessKeyId=AKIDEXAMPLEACCESSID&Expires=1700000000000&Signature=boZSYK3WfKmpn71iqMWUiygl%2Bro%3D',
+    },
+  },
+  {
+    name: 'presign-with-content-type-md5',
+    baseUri: 'http://files.fds.api.xiaomi.com/',
+    bucketName: 'my-bucket',
+    objectName: 'my-object',
+    subResources: null,
+    expiresMillis: 1700000000000,
+    httpMethod: HttpMethod.PUT,
+    headers: [
+      ['content-type', 'image/png'],
+      ['content-md5', '1B2M2Y8AsgTpgAmY7PhCfg=='],
+    ],
+    algorithm: SignAlgorithm.HmacSHA1,
+    expected: {
+      uri: 'http://files.fds.api.xiaomi.com/my-bucket/my-object?GalaxyAccessKeyId=AKIDEXAMPLEACCESSID&Expires=1700000000000&Signature=maqy85AnDZNB%2BpL35UZPmGEcPl0%3D',
+    },
+  },
+  {
+    name: 'presign-object-with-spaces',
+    baseUri: 'http://files.fds.api.xiaomi.com/',
+    bucketName: 'my-bucket',
+    objectName: 'path with spaces/a+b.txt',
+    subResources: null,
+    expiresMillis: 1700000000000,
+    httpMethod: HttpMethod.GET,
+    headers: null,
+    algorithm: SignAlgorithm.HmacSHA1,
+    expected: {
+      uri: 'http://files.fds.api.xiaomi.com/my-bucket/path%20with%20spaces/a+b.txt?GalaxyAccessKeyId=AKIDEXAMPLEACCESSID&Expires=1700000000000&Signature=SslO4rj2jd%2BpAGasj24LHRf3qTQ%3D',
+    },
+  },
+];
 
 function toHeaders(entries: Array<[string, string]> | null): HeaderMultiMap | undefined {
   if (entries == null) {
@@ -59,35 +257,34 @@ function toHeaders(entries: Array<[string, string]> | null): HeaderMultiMap | un
 }
 
 describe('signing — golden parity with galaxy-fds-sdk-java 3.0.48', () => {
-  it('has a non-empty fixture set', () => {
-    expect(golden.signCases.length).toBeGreaterThan(0);
-    expect(golden.presignCases.length).toBeGreaterThan(0);
-  });
-
-  for (const c of golden.signCases) {
+  for (const c of SIGN_CASES) {
     describe(c.name, () => {
-      const method = c.httpMethod as HttpMethod;
-      const alg = c.algorithm as SignAlgorithm;
       const headers = toHeaders(c.headers);
 
       it('constructs the same string to sign', () => {
-        const actual = constructStringToSign(method, c.uri, HeaderMultiMap.from(headers));
+        const actual = constructStringToSign(c.httpMethod, c.uri, HeaderMultiMap.from(headers));
         expect(actual).toBe(c.expected.stringToSign);
       });
 
       it('produces the same signature', () => {
-        const actual = Signer.signToBase64(method, c.uri, headers, c.accessSecret, alg);
+        const actual = Signer.signToBase64(
+          c.httpMethod,
+          c.uri,
+          headers,
+          ACCESS_SECRET,
+          c.algorithm,
+        );
         expect(actual).toBe(c.expected.signature);
       });
 
       it('produces the same authorization header', () => {
         const actual = Signer.getAuthorizationHeader(
-          method,
+          c.httpMethod,
           c.uri,
           headers,
-          c.accessId,
-          c.accessSecret,
-          alg,
+          ACCESS_ID,
+          ACCESS_SECRET,
+          c.algorithm,
         );
         expect(actual).toBe(c.expected.authorizationHeader);
       });
@@ -96,7 +293,7 @@ describe('signing — golden parity with galaxy-fds-sdk-java 3.0.48', () => {
 });
 
 describe('pre-signed URI — golden parity with galaxy-fds-sdk-java 3.0.48', () => {
-  for (const c of golden.presignCases) {
+  for (const c of PRESIGN_CASES) {
     it(c.name, () => {
       const actual = Signer.generatePresignedUri(
         c.baseUri,
@@ -104,10 +301,10 @@ describe('pre-signed URI — golden parity with galaxy-fds-sdk-java 3.0.48', () 
         c.objectName,
         c.subResources,
         c.expiresMillis,
-        c.httpMethod as HttpMethod,
-        c.accessId,
-        c.accessSecret,
-        c.algorithm as SignAlgorithm,
+        c.httpMethod,
+        ACCESS_ID,
+        ACCESS_SECRET,
+        c.algorithm,
         toHeaders(c.headers),
       );
       expect(actual).toBe(c.expected.uri);
