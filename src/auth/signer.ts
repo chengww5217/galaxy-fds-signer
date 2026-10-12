@@ -12,15 +12,15 @@ import { GalaxyFDSClientException } from '../errors.js';
 import { encodeUriPath, parseUri, parseUriParameters, urlEncode } from './utils.js';
 
 /**
- * Case-insensitive multimap of HTTP headers, preserving insertion order and
- * allowing multiple values per key. Mirrors the Guava `LinkedListMultimap`
- * used by the Java SDK.
+ * Multimap of HTTP headers, preserving insertion order and allowing multiple
+ * values per key. Lookups are case-sensitive, mirroring the Guava
+ * `LinkedListMultimap` used by the Java SDK.
  *
  * Accepts plain objects where values may be a single string or an array.
  */
 export type HttpHeaders = Record<string, string | string[]> | HeaderMultiMap;
 
-/** Ordered, multi-valued header container with case-insensitive lookup by lower-cased key. */
+/** Ordered, multi-valued header container with case-sensitive key lookup. */
 export class HeaderMultiMap {
   private readonly entriesList: Array<[string, string]> = [];
 
@@ -54,20 +54,19 @@ export class HeaderMultiMap {
   }
 
   /**
-   * Returns all values whose key equals `name` ignoring case, in insertion order.
+   * Returns all values whose key equals `name` exactly, in insertion order.
    */
   get(name: string): string[] {
-    const lower = name.toLowerCase();
     const values: string[] = [];
     for (const [k, v] of this.entriesList) {
-      if (k.toLowerCase() === lower) {
+      if (k === name) {
         values.push(v);
       }
     }
     return values;
   }
 
-  /** First value for `name` (case-insensitive), or empty string when absent. */
+  /** First value for `name` (exact match), or empty string when absent. */
   getFirst(name: string): string {
     const values = this.get(name);
     return values.length > 0 ? values[0] : '';

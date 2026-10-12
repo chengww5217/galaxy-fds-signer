@@ -19,3 +19,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `HttpMethod` / `SignAlgorithm` / `SubResource` / `XiaomiHeader` constant maps
   with literal union types, plus signing utilities.
 - Golden parity test suite generated from the official Java SDK.
+
+### Changed
+
+- `HeaderMultiMap` lookups are now case-sensitive, matching the Java SDK's
+  Guava `LinkedListMultimap`. Previously they ignored case, so headers such as
+  `Date` or `Content-Type` were signed even though the Java SDK only signs the
+  lower-cased forms. Pass headers with the exact keys the service expects
+  (e.g. `date`, `content-type`, `x-xiaomi-date`).

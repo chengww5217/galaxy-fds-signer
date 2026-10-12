@@ -61,12 +61,14 @@ describe('generatePresignedUri input validation', () => {
 });
 
 describe('HeaderMultiMap', () => {
-  it('looks up values case-insensitively, preserving insertion order', () => {
+  it('looks up values by exact key, preserving insertion order', () => {
     const map = new HeaderMultiMap();
     map.put('X-Xiaomi-Date', 'v1');
     map.put('x-xiaomi-date', 'v2');
-    expect(map.get('X-XIAOMI-DATE')).toEqual(['v1', 'v2']);
-    expect(map.getFirst('x-Xiaomi-Date')).toBe('v1');
+    expect(map.get('X-Xiaomi-Date')).toEqual(['v1']);
+    expect(map.get('x-xiaomi-date')).toEqual(['v2']);
+    expect(map.get('X-XIAOMI-DATE')).toEqual([]);
+    expect(map.getFirst('x-xiaomi-date')).toBe('v2');
     expect(map.entries()).toEqual([
       ['X-Xiaomi-Date', 'v1'],
       ['x-xiaomi-date', 'v2'],
@@ -78,7 +80,8 @@ describe('HeaderMultiMap', () => {
       'content-type': 'text/plain',
       'x-xiaomi-meta-tags': ['a', 'b'],
     });
-    expect(map.getFirst('Content-Type')).toBe('text/plain');
+    expect(map.getFirst('content-type')).toBe('text/plain');
+    expect(map.getFirst('Content-Type')).toBe('');
     expect(map.get('x-xiaomi-meta-tags')).toEqual(['a', 'b']);
   });
 
