@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { GalaxyFDSClientException, HttpMethod, Signer } from '../src/index.js';
+import { GalaxyFDSClientException, HeaderMultiMap, HttpMethod, Signer } from '../src/index.js';
 
 const ACCESS_ID = 'AKIDEXAMPLEACCESSID';
 const ACCESS_SECRET = 'wJalrXUtnFEMIK7MDENGbPxRfiCYEXAMPLEKEY';
@@ -57,4 +57,38 @@ describe('generatePresignedUri input validation', () => {
       expect(() => presign(expiration)).toThrow('expiration');
     },
   );
+});
+
+describe('HeaderMultiMap', () => {
+  it('looks up values case-insensitively, preserving insertion order', () => {
+    const map = new HeaderMultiMap();
+    map.put('X-Xiaomi-Date', 'v1');
+    map.put('x-xiaomi-date', 'v2');
+    expect(map.get('X-XIAOMI-DATE')).toEqual(['v1', 'v2']);
+    expect(map.getFirst('x-Xiaomi-Date')).toBe('v1');
+    expect(map.entries()).toEqual([
+      ['X-Xiaomi-Date', 'v1'],
+      ['x-xiaomi-date', 'v2'],
+    ]);
+  });
+
+  it('builds from a plain object with single or array values', () => {
+    const map = HeaderMultiMap.from({
+      'content-type': 'text/plain',
+      'x-xiaomi-meta-tags': ['a', 'b'],
+    });
+    expect(map.getFirst('Content-Type')).toBe('text/plain');
+    expect(map.get('x-xiaomi-meta-tags')).toEqual(['a', 'b']);
+  });
+
+  it('from() returns the same instance when given one', () => {
+    const map = new HeaderMultiMap();
+    expect(HeaderMultiMap.from(map)).toBe(map);
+  });
+
+  it('from(undefined) yields an empty map and getFirst defaults to an empty string', () => {
+    const map = HeaderMultiMap.from(undefined);
+    expect(map.entries()).toEqual([]);
+    expect(map.getFirst('missing')).toBe('');
+  });
 });

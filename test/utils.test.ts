@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 import {
   calcMD5,
+  encodeUriPath,
   getGMTDatetime,
   parseUri,
   parseUriParameters,
@@ -98,5 +99,23 @@ describe('getGMTDatetime', () => {
   it('formats a date as an RFC 822 GMT string', () => {
     const d = new Date(Date.UTC(1994, 10, 6, 8, 49, 37));
     expect(getGMTDatetime(d)).toBe('Sun, 06 Nov 1994 08:49:37 GMT');
+  });
+});
+
+describe('encodeUriPath', () => {
+  it('encodes spaces as %20 and leaves + intact', () => {
+    expect(encodeUriPath('/b/path with spaces/a+b.txt')).toBe('/b/path%20with%20spaces/a+b.txt');
+  });
+
+  it('percent-encodes non-ASCII characters as UTF-8', () => {
+    expect(encodeUriPath('/b/中文')).toBe('/b/%E4%B8%AD%E6%96%87');
+  });
+
+  it('keeps RFC 2396 path characters untouched', () => {
+    expect(encodeUriPath("/b/a-_.!~*'():@&=+$,;/c")).toBe("/b/a-_.!~*'():@&=+$,;/c");
+  });
+
+  it('encodes characters outside the path set', () => {
+    expect(encodeUriPath('/b/a?b#c"d')).toBe('/b/a%3Fb%23c%22d');
   });
 });
