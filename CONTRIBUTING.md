@@ -9,6 +9,9 @@ npm install
 npm test
 ```
 
+The published package runs on Node.js >= 18, but the development toolchain
+(vitest 5) requires Node.js >= 22 — use Node 22/24 locally, matching CI.
+
 ## Guidelines
 
 - The signing logic must stay byte-for-byte compatible with the official
@@ -19,6 +22,9 @@ npm test
   `test/utils.test.ts` together with your change.
 - Run `npm run typecheck` and `npm run lint` before opening a pull request.
 - Keep the package dependency-free at runtime; use Node.js built-ins only.
+- Use `undefined`, not `null`, for absent values in the SDK's own types: mark
+  optional properties and parameters with `?`, and normalize any `null` at the
+  boundary immediately.
 - Follow Conventional Commits for commit messages (e.g. `feat:`, `fix:`,
   `test:`, `docs:`, `chore:`).
 

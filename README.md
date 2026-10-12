@@ -21,6 +21,8 @@ It is a faithful port of the signing logic in the official [`galaxy-fds-sdk-java
 ## Requirements
 
 - Node.js >= 18
+- For TypeScript consumers, `@types/node` (the public declarations reference
+  `Buffer` via `Signer.sign`)
 
 ## Installation
 
@@ -68,7 +70,7 @@ const expiration = new Date(Date.now() + 60 * 60 * 1000);
 // Download URL
 const downloadUri = client.generatePresignedUri('my-bucket', 'my-object', expiration);
 
-// Upload URL (PUT) — the options form avoids null placeholders
+// Upload URL (PUT) — the options object reads better than positional arguments
 const uploadUri = client.generatePresignedUri('my-bucket', 'my-object', expiration, {
   method: 'PUT',
 });
@@ -98,6 +100,9 @@ const client = new GalaxyFDSClient(credential, {
 
 ```ts
 import { Signer, HttpMethod, SignAlgorithm } from 'galaxy-fds-sdk-nodejs';
+
+const uri = 'http://files.fds.api.xiaomi.com/my-bucket/my-object';
+const headers = { date: new Date().toUTCString() };
 
 const signature = Signer.signToBase64(
   HttpMethod.GET,
