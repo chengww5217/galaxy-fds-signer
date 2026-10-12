@@ -29,7 +29,20 @@ export default [
     rules: {
       ...tseslint.configs.recommended.rules,
       '@typescript-eslint/no-explicit-any': 'warn',
+      // The base rule does not understand TypeScript declaration merging
+      // (a const and a type sharing a name); the TS-aware variant does.
+      'no-redeclare': 'off',
+      '@typescript-eslint/no-redeclare': 'error',
     },
   },
   prettier,
+  {
+    // src/enums.ts intentionally pairs a const with a same-named union type
+    // (the enum replacement pattern); @typescript-eslint/no-redeclare does
+    // not treat variable+type-alias as declaration merging.
+    files: ['src/enums.ts'],
+    rules: {
+      '@typescript-eslint/no-redeclare': 'off',
+    },
+  },
 ];
