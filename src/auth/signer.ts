@@ -100,7 +100,9 @@ export const Signer = {
     secretAccessKeyId: string,
     algorithm: SignAlgorithm = SignAlgorithm.HmacSHA1,
   ): string {
-    return this.sign(httpMethod, uri, httpHeaders, secretAccessKeyId, algorithm).toString('base64');
+    return Signer.sign(httpMethod, uri, httpHeaders, secretAccessKeyId, algorithm).toString(
+      'base64',
+    );
   },
 
   /**
@@ -115,7 +117,7 @@ export const Signer = {
     secretAccessKeyId: string,
     algorithm: SignAlgorithm = SignAlgorithm.HmacSHA1,
   ): string {
-    const signature = this.signToBase64(
+    const signature = Signer.signToBase64(
       httpMethod,
       uri,
       httpHeaders,
@@ -170,7 +172,7 @@ export const Signer = {
       const port = base.port === '' ? '' : `:${base.port}`;
       const encodedUri = `${base.protocol}//${base.hostname}${port}${path}?${query}`;
 
-      const signature = this.signToBase64(
+      const signature = Signer.signToBase64(
         httpMethod,
         encodedUri,
         httpHeaders,
