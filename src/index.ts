@@ -39,3 +39,4 @@ export {
   calcMD5,
 } from './auth/utils.js';
 export { GalaxyFDSClient, type FDSClientOptions, type PresignOptions } from './client.js';
+export { FDSClientConfiguration, type FDSClientConfigurationOptions } from './config.js';

@@ -1,20 +1,16 @@
 import { Common } from './common.js';
+import { FDSClientConfiguration, type FDSClientConfigurationOptions } from './config.js';
 import { type CredentialInput, type GalaxyFDSCredential, toGalaxyFDSCredential } from './credential.js';
 import { HttpMethod, SignAlgorithm, SubResource } from './enums.js';
 import { HeaderMultiMap, type HttpHeaders, Signer } from './auth/signer.js';
 
-/** Options for constructing a {@link GalaxyFDSClient}. */
-export interface FDSClientOptions {
-  /**
-   * Service base URI used for pre-signed URIs, e.g. `http://files.fds.api.xiaomi.com/`.
-   * Defaults to {@link Common.DEFAULT_FDS_SERVICE_BASE_URI}.
-   */
-  baseUri?: string;
-  /**
-   * CDN base URI used for pre-signed CDN URIs, e.g. `http://cdn.fds.api.xiaomi.com/`.
-   * Defaults to {@link Common.DEFAULT_CDN_SERVICE_URI}.
-   */
-  cdnBaseUri?: string;
+/**
+ * Options for constructing a {@link GalaxyFDSClient}.
+ *
+ * Addressing options ({@link FDSClientConfigurationOptions}) are inherited from
+ * {@link FDSClientConfiguration}; `signAlgorithm` is specific to this client.
+ */
+export interface FDSClientOptions extends FDSClientConfigurationOptions {
   /** Signature algorithm; defaults to {@link SignAlgorithm.HmacSHA1}. */
   signAlgorithm?: SignAlgorithm;
 }
@@ -43,20 +39,23 @@ export interface PresignOptions {
  */
 export class GalaxyFDSClient {
   private readonly credential: GalaxyFDSCredential;
-  private readonly baseUri: string;
-  private readonly cdnBaseUri: string;
+  private readonly config: FDSClientConfiguration;
   private readonly signAlgorithm: SignAlgorithm;
 
   /**
    * @param credential A {@link GalaxyFDSCredential} implementation or a plain
    *                   `{ accessId, accessSecret }` object.
-   * @param options    Endpoint and algorithm overrides.
+   * @param options    Endpoint, addressing and algorithm overrides.
    */
   constructor(credential: CredentialInput, options: FDSClientOptions = {}) {
     this.credential = toGalaxyFDSCredential(credential);
-    this.baseUri = options.baseUri ?? Common.DEFAULT_FDS_SERVICE_BASE_URI;
-    this.cdnBaseUri = options.cdnBaseUri ?? Common.DEFAULT_CDN_SERVICE_URI;
+    this.config = new FDSClientConfiguration(options);
     this.signAlgorithm = options.signAlgorithm ?? SignAlgorithm.HmacSHA1;
+  }
+
+  /** The resolved endpoint configuration. */
+  getConfig(): FDSClientConfiguration {
+    return this.config;
   }
 
   /**
@@ -126,7 +125,7 @@ export class GalaxyFDSClient {
   ): string {
     const resolved = resolvePresignOptions(optionsOrMethod, subResources, contentType, contentMD5);
     return this.presign(
-      this.baseUri,
+      this.config.getBaseUri(),
       bucketName,
       objectName,
       expiration,
@@ -173,7 +172,7 @@ export class GalaxyFDSClient {
   ): string {
     const resolved = resolvePresignOptions(optionsOrMethod, subResources, contentType, contentMD5);
     return this.presign(
-      this.cdnBaseUri,
+      this.config.getCdnBaseUri(),
       bucketName,
       objectName,
       expiration,

@@ -19,6 +19,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `HttpMethod` / `SignAlgorithm` / `SubResource` / `XiaomiHeader` constant maps
   with literal union types, plus signing utilities.
 - Golden parity test suite generated from the official Java SDK.
+- `FDSClientConfiguration` (exported) and the `endpoint` / `regionName` /
+  `cdnEndpoint` / `enableHttps` / `enableCdnForUpload` / `enableCdnForDownload`
+  options on `GalaxyFDSClient`, ported from the Java SDK's
+  `FDSClientConfiguration`.
 
 ### Changed
 
