@@ -37,7 +37,7 @@ describe('virtual-hosted-style addressing', () => {
       'https://files.mi-fds.com/',
       'my-bucket',
       'my-object',
-      null,
+      undefined,
       EXPIRES,
       HttpMethod.GET,
       ACCESS_ID,

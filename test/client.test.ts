@@ -100,7 +100,7 @@ describe('GalaxyFDSClient', () => {
       'o',
       1700000000000,
       HttpMethod.PUT,
-      null,
+      [],
       'image/png',
       '1B2M2Y8AsgTpgAmY7PhCfg==',
     );

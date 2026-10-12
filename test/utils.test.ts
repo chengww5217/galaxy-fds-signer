@@ -46,15 +46,15 @@ describe('urlEncode — golden parity', () => {
     });
   }
 
-  it('returns empty string for null/undefined', () => {
-    expect(urlEncode(null)).toBe('');
+  it('returns empty string for undefined', () => {
     expect(urlEncode(undefined)).toBe('');
+    expect(urlEncode()).toBe('');
   });
 });
 
 describe('parseUriParameters', () => {
-  it('returns an empty list for null or empty query', () => {
-    expect(parseUriParameters(null)).toEqual([]);
+  it('returns an empty list for undefined or empty query', () => {
+    expect(parseUriParameters(undefined)).toEqual([]);
     expect(parseUriParameters('')).toEqual([]);
   });
 
@@ -83,10 +83,10 @@ describe('parseUri', () => {
     expect(parts.query).toBe('acl&x=1');
   });
 
-  it('reports port -1 and null query when absent', () => {
+  it('reports port -1 and undefined query when absent', () => {
     const parts = parseUri('http://host/bucket/obj');
     expect(parts.port).toBe(-1);
-    expect(parts.query).toBeNull();
+    expect(parts.query).toBeUndefined();
   });
 
   it('decodes the path component', () => {

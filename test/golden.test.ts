@@ -29,10 +29,10 @@ interface PresignCase {
   baseUri: string;
   bucketName: string;
   objectName: string;
-  subResources: string[] | null;
+  subResources: string[];
   expiresMillis: number;
   httpMethod: HttpMethod;
-  headers: Array<[string, string]> | null;
+  headers?: Array<[string, string]>;
   algorithm: SignAlgorithm;
   expected: { uri: string };
 }
@@ -175,10 +175,9 @@ const PRESIGN_CASES: PresignCase[] = [
     baseUri: 'http://files.fds.api.xiaomi.com/',
     bucketName: 'my-bucket',
     objectName: 'my-object',
-    subResources: null,
+    subResources: [],
     expiresMillis: 1700000000000,
     httpMethod: HttpMethod.GET,
-    headers: null,
     algorithm: SignAlgorithm.HmacSHA1,
     expected: {
       uri: 'http://files.fds.api.xiaomi.com/my-bucket/my-object?GalaxyAccessKeyId=AKIDEXAMPLEACCESSID&Expires=1700000000000&Signature=p%2BqjVTQ54pVld7OUrbO3ge5VinM%3D',
@@ -189,10 +188,9 @@ const PRESIGN_CASES: PresignCase[] = [
     baseUri: 'http://files.fds.api.xiaomi.com/',
     bucketName: 'my-bucket',
     objectName: '',
-    subResources: null,
+    subResources: [],
     expiresMillis: 1700000000000,
     httpMethod: HttpMethod.GET,
-    headers: null,
     algorithm: SignAlgorithm.HmacSHA1,
     expected: {
       uri: 'http://files.fds.api.xiaomi.com/my-bucket?GalaxyAccessKeyId=AKIDEXAMPLEACCESSID&Expires=1700000000000&Signature=QNE9PNhIxuCnhT9obtZwc2eXOKE%3D',
@@ -206,7 +204,6 @@ const PRESIGN_CASES: PresignCase[] = [
     subResources: ['metadata', 'acl'],
     expiresMillis: 1700000000000,
     httpMethod: HttpMethod.GET,
-    headers: null,
     algorithm: SignAlgorithm.HmacSHA1,
     expected: {
       uri: 'http://files.fds.api.xiaomi.com/my-bucket/my-object?metadata&acl&GalaxyAccessKeyId=AKIDEXAMPLEACCESSID&Expires=1700000000000&Signature=boZSYK3WfKmpn71iqMWUiygl%2Bro%3D',
@@ -217,7 +214,7 @@ const PRESIGN_CASES: PresignCase[] = [
     baseUri: 'http://files.fds.api.xiaomi.com/',
     bucketName: 'my-bucket',
     objectName: 'my-object',
-    subResources: null,
+    subResources: [],
     expiresMillis: 1700000000000,
     httpMethod: HttpMethod.PUT,
     headers: [
@@ -234,10 +231,9 @@ const PRESIGN_CASES: PresignCase[] = [
     baseUri: 'http://files.fds.api.xiaomi.com/',
     bucketName: 'my-bucket',
     objectName: 'path with spaces/a+b.txt',
-    subResources: null,
+    subResources: [],
     expiresMillis: 1700000000000,
     httpMethod: HttpMethod.GET,
-    headers: null,
     algorithm: SignAlgorithm.HmacSHA1,
     expected: {
       uri: 'http://files.fds.api.xiaomi.com/my-bucket/path%20with%20spaces/a+b.txt?GalaxyAccessKeyId=AKIDEXAMPLEACCESSID&Expires=1700000000000&Signature=SslO4rj2jd%2BpAGasj24LHRf3qTQ%3D',
@@ -245,8 +241,8 @@ const PRESIGN_CASES: PresignCase[] = [
   },
 ];
 
-function toHeaders(entries: Array<[string, string]> | null): HeaderMultiMap | undefined {
-  if (entries == null) {
+function toHeaders(entries?: Array<[string, string]>): HeaderMultiMap | undefined {
+  if (entries === undefined) {
     return undefined;
   }
   const map = new HeaderMultiMap();

@@ -138,7 +138,7 @@ export const Signer = {
    * @param baseUri      The service base URI, e.g. `http://files.fds.api.xiaomi.com/`.
    * @param bucketName   The bucket name.
    * @param objectName   The object name, or empty for bucket-level resources.
-   * @param subResources Sub-resource query fragments (e.g. `["acl"]`), or `null`.
+   * @param subResources Sub-resource query fragments (e.g. `["acl"]`); may be empty or `undefined`.
    * @param expiration   Expiration time; a `Date` or epoch milliseconds.
    * @param httpMethod   The HTTP method the URI will be used with.
    * @param accessId     The access key id.
@@ -149,8 +149,8 @@ export const Signer = {
   generatePresignedUri(
     baseUri: string,
     bucketName: string,
-    objectName: string | null,
-    subResources: string[] | null,
+    objectName: string,
+    subResources: string[] | undefined,
     expiration: Date | number,
     httpMethod: HttpMethod,
     accessId: string,
@@ -170,13 +170,13 @@ export const Signer = {
 
     try {
       const base = new URL(baseUri);
-      const objectPart = objectName != null && objectName.length > 0 ? '/' + objectName : '';
+      const objectPart = objectName.length > 0 ? '/' + objectName : '';
 
       // Encode the path as java.net.URI's constructor would. Signing re-parses
       // this URI and decodes the path back, so the signature is unaffected.
       const path = encodeUriPath('/' + bucketName + objectPart);
       const queryParts: string[] = [];
-      if (subResources != null && subResources.length > 0) {
+      if (subResources?.length) {
         queryParts.push(subResources.join('&'));
       }
       queryParts.push(`${Common.GALAXY_ACCESS_KEY_ID}=${accessId}`);
@@ -274,7 +274,7 @@ export function canonicalizeXiaomiHeaders(headers: HttpHeaders | undefined): str
  * Canonicalizes the resource: the path followed by the recognized sub-resource
  * query parameters, sorted lexicographically.
  */
-export function canonicalizeResource(path: string, query: string | null): string {
+export function canonicalizeResource(path: string, query?: string): string {
   let result = path;
 
   const sortedParams = new Map<string, string>();
@@ -312,7 +312,7 @@ function getContentType(headers: HeaderMultiMap): string {
 }
 
 /** Reads the `Expires` query parameter as a number, or `0` when absent. */
-function getExpires(query: string | null): number {
+function getExpires(query?: string): number {
   for (const [key, value] of parseUriParameters(query)) {
     if (key === Common.EXPIRES) {
       return Number.parseInt(value, 10);

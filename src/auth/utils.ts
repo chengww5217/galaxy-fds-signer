@@ -14,8 +14,8 @@ export interface UriParts {
   port: number;
   /** Decoded path component, always starting with `/`. */
   path: string;
-  /** Raw query string without the leading `?`, or `null` when absent. */
-  query: string | null;
+  /** Raw query string without the leading `?`, or `undefined` when absent. */
+  query?: string;
 }
 
 /**
@@ -31,7 +31,7 @@ export function parseUri(uri: string): UriParts {
     host: url.hostname,
     port: url.port === '' ? -1 : Number(url.port),
     path: decodeURIComponent(url.pathname),
-    query: url.search === '' ? null : url.search.slice(1),
+    query: url.search === '' ? undefined : url.search.slice(1),
   };
 }
 
@@ -43,9 +43,9 @@ export function parseUri(uri: string): UriParts {
  * (so `=` characters inside the value are preserved). A token without `=`
  * yields an empty value.
  */
-export function parseUriParameters(query: string | null): Array<[string, string]> {
+export function parseUriParameters(query?: string): Array<[string, string]> {
   const params: Array<[string, string]> = [];
-  if (query == null || query.length === 0) {
+  if (query === undefined || query.length === 0) {
     return params;
   }
   for (const param of query.split('&')) {
@@ -76,8 +76,8 @@ const URL_ENCODE_SAFE = /[A-Za-z0-9.\-*_]/;
  * Encodes a value the way `Signer.urlEncode` does: `java.net.URLEncoder`
  * (UTF-8) followed by replacing `+`→`%20`, `*`→`%2A`, `~`→`%7E`, `/`→`%2F`.
  */
-export function urlEncode(value: string | null | undefined): string {
-  if (value == null) {
+export function urlEncode(value?: string): string {
+  if (value === undefined) {
     return '';
   }
 

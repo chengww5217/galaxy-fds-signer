@@ -23,7 +23,7 @@ export interface PresignOptions {
   /** The HTTP method the pre-signed URI will be used with (defaults to GET). */
   method?: HttpMethod;
   /** Optional sub-resource fragments (e.g. `["acl"]`). */
-  subResources?: Array<SubResource | string> | null;
+  subResources?: Array<SubResource | string>;
   /** Optional content type included in the signature. */
   contentType?: string;
   /** Optional content-md5 included in the signature. */
@@ -110,7 +110,7 @@ export class GalaxyFDSClient {
     objectName: string,
     expiration: Date | number,
     httpMethod?: HttpMethod,
-    subResources?: Array<SubResource | string> | null,
+    subResources?: Array<SubResource | string>,
     contentType?: string,
     contentMD5?: string,
   ): string;
@@ -119,7 +119,7 @@ export class GalaxyFDSClient {
     objectName: string,
     expiration: Date | number,
     optionsOrMethod: PresignOptions | HttpMethod = HttpMethod.GET,
-    subResources: Array<SubResource | string> | null = null,
+    subResources?: Array<SubResource | string>,
     contentType?: string,
     contentMD5?: string,
   ): string {
@@ -157,7 +157,7 @@ export class GalaxyFDSClient {
     objectName: string,
     expiration: Date | number,
     httpMethod?: HttpMethod,
-    subResources?: Array<SubResource | string> | null,
+    subResources?: Array<SubResource | string>,
     contentType?: string,
     contentMD5?: string,
   ): string;
@@ -166,7 +166,7 @@ export class GalaxyFDSClient {
     objectName: string,
     expiration: Date | number,
     optionsOrMethod: PresignOptions | HttpMethod = HttpMethod.GET,
-    subResources: Array<SubResource | string> | null = null,
+    subResources?: Array<SubResource | string>,
     contentType?: string,
     contentMD5?: string,
   ): string {
@@ -189,7 +189,7 @@ export class GalaxyFDSClient {
     objectName: string,
     expiration: Date | number,
     httpMethod: HttpMethod,
-    subResources: Array<SubResource | string> | null,
+    subResources: Array<SubResource | string>,
     contentType?: string,
     contentMD5?: string,
   ): string {
@@ -204,8 +204,7 @@ export class GalaxyFDSClient {
       }
     }
 
-    const subResourceNames =
-      subResources == null ? null : subResources.map((s) => s.toString());
+    const subResourceNames = subResources.map((s) => s.toString());
 
     return Signer.generatePresignedUri(
       this.applyVirtualAddressing(baseUri, bucketName),
@@ -249,7 +248,7 @@ export class GalaxyFDSClient {
 /** Fully-resolved pre-sign parameters, ready for the private presign helper. */
 interface ResolvedPresignOptions {
   method: HttpMethod;
-  subResources: Array<SubResource | string> | null;
+  subResources: Array<SubResource | string>;
   contentType?: string;
   contentMD5?: string;
 }
@@ -260,21 +259,21 @@ interface ResolvedPresignOptions {
  */
 function resolvePresignOptions(
   optionsOrMethod: PresignOptions | HttpMethod,
-  subResources: Array<SubResource | string> | null,
-  contentType: string | undefined,
-  contentMD5: string | undefined,
+  subResources?: Array<SubResource | string>,
+  contentType?: string,
+  contentMD5?: string,
 ): ResolvedPresignOptions {
-  if (optionsOrMethod !== null && typeof optionsOrMethod === 'object') {
+  if (typeof optionsOrMethod === 'object') {
     return {
       method: optionsOrMethod.method ?? HttpMethod.GET,
-      subResources: optionsOrMethod.subResources ?? null,
+      subResources: optionsOrMethod.subResources ?? [],
       contentType: optionsOrMethod.contentType,
       contentMD5: optionsOrMethod.contentMD5,
     };
   }
   return {
     method: optionsOrMethod ?? HttpMethod.GET,
-    subResources,
+    subResources: subResources ?? [],
     contentType,
     contentMD5,
   };
