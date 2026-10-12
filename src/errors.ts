@@ -12,7 +12,5 @@ export class GalaxyFDSClientException extends Error {
     super(message, options?.cause !== undefined ? { cause: options.cause } : undefined);
     this.name = 'GalaxyFDSClientException';
     this.statusCode = options?.statusCode;
-    // Restore prototype chain for instanceof checks when compiled to older targets.
-    Object.setPrototypeOf(this, GalaxyFDSClientException.prototype);
   }
 }
