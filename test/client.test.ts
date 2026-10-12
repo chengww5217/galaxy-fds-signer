@@ -4,6 +4,7 @@ import {
   BasicFDSCredential,
   Common,
   GalaxyFDSClient,
+  GalaxyFDSClientException,
   HttpMethod,
   Signer,
   SubResource,
@@ -68,5 +69,22 @@ describe('GalaxyFDSClient', () => {
     });
     const uri = client.generatePresignedUri('b', 'o', 1700000000000);
     expect(uri.startsWith('https://my.endpoint.example.com/b/o?')).toBe(true);
+  });
+
+  it('accepts a plain { accessId, accessSecret } credential', () => {
+    const plain = new GalaxyFDSClient({ accessId: ACCESS_ID, accessSecret: ACCESS_SECRET });
+    const uri = Common.DEFAULT_FDS_SERVICE_BASE_URI + 'my-bucket/my-object';
+    const headers = { date: 'Sun, 06 Nov 1994 08:49:37 GMT' };
+    expect(plain.getAuthorizationHeader(HttpMethod.GET, uri, headers)).toBe(
+      newClient().getAuthorizationHeader(HttpMethod.GET, uri, headers),
+    );
+    expect(plain.generatePresignedUri('b', 'o', 1700000000000)).toBe(
+      newClient().generatePresignedUri('b', 'o', 1700000000000),
+    );
+  });
+
+  it('rejects a credential with neither credential shape', () => {
+    expect(() => new GalaxyFDSClient({} as never)).toThrow(GalaxyFDSClientException);
+    expect(() => new GalaxyFDSClient({ accessId: ACCESS_ID } as never)).toThrow('credential');
   });
 });

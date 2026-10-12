@@ -15,7 +15,13 @@ export {
   SUB_RESOURCE_SET,
 } from './enums.js';
 export { GalaxyFDSClientException } from './errors.js';
-export { type GalaxyFDSCredential, BasicFDSCredential } from './credential.js';
+export {
+  type GalaxyFDSCredential,
+  type CredentialObject,
+  type CredentialInput,
+  BasicFDSCredential,
+  toGalaxyFDSCredential,
+} from './credential.js';
 export {
   Signer,
   HeaderMultiMap,

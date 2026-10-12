@@ -1,5 +1,5 @@
 import { Common } from './common.js';
-import type { GalaxyFDSCredential } from './credential.js';
+import { type CredentialInput, type GalaxyFDSCredential, toGalaxyFDSCredential } from './credential.js';
 import { HttpMethod, SignAlgorithm, SubResource } from './enums.js';
 import { HeaderMultiMap, type HttpHeaders, Signer } from './auth/signer.js';
 
@@ -32,8 +32,13 @@ export class GalaxyFDSClient {
   private readonly cdnBaseUri: string;
   private readonly signAlgorithm: SignAlgorithm;
 
-  constructor(credential: GalaxyFDSCredential, options: FDSClientOptions = {}) {
-    this.credential = credential;
+  /**
+   * @param credential A {@link GalaxyFDSCredential} implementation or a plain
+   *                   `{ accessId, accessSecret }` object.
+   * @param options    Endpoint and algorithm overrides.
+   */
+  constructor(credential: CredentialInput, options: FDSClientOptions = {}) {
+    this.credential = toGalaxyFDSCredential(credential);
     this.baseUri = options.baseUri ?? Common.DEFAULT_FDS_SERVICE_BASE_URI;
     this.cdnBaseUri = options.cdnBaseUri ?? Common.DEFAULT_CDN_SERVICE_URI;
     this.signAlgorithm = options.signAlgorithm ?? SignAlgorithm.HmacSHA1;
