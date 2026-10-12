@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { HttpMethod, Signer } from '../src/index.js';
+import { GalaxyFDSClientException, HttpMethod, Signer } from '../src/index.js';
 
 const ACCESS_ID = 'AKIDEXAMPLEACCESSID';
 const ACCESS_SECRET = 'wJalrXUtnFEMIK7MDENGbPxRfiCYEXAMPLEKEY';
@@ -29,4 +29,32 @@ describe('Signer API', () => {
       ),
     ).toContain('Signature=');
   });
+});
+
+describe('generatePresignedUri input validation', () => {
+  function presign(expiration: Date | number, bucketName = 'my-bucket'): string {
+    return Signer.generatePresignedUri(
+      'http://files.fds.api.xiaomi.com/',
+      bucketName,
+      'my-object',
+      null,
+      expiration,
+      HttpMethod.GET,
+      ACCESS_ID,
+      ACCESS_SECRET,
+    );
+  }
+
+  it('rejects an empty bucket name', () => {
+    expect(() => presign(1700000000000, '')).toThrow(GalaxyFDSClientException);
+    expect(() => presign(1700000000000, '')).toThrow('bucketName');
+  });
+
+  it.each([NaN, Infinity, -Infinity, new Date('not a date')])(
+    'rejects an invalid expiration: %s',
+    (expiration) => {
+      expect(() => presign(expiration)).toThrow(GalaxyFDSClientException);
+      expect(() => presign(expiration)).toThrow('expiration');
+    },
+  );
 });

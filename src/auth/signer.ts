@@ -153,10 +153,19 @@ export const Signer = {
     algorithm: SignAlgorithm = SignAlgorithm.HmacSHA1,
     httpHeaders?: HttpHeaders,
   ): string {
+    if (typeof bucketName !== 'string' || bucketName.length === 0) {
+      throw new GalaxyFDSClientException('bucketName must be a non-empty string');
+    }
+    const expiresMillis = expiration instanceof Date ? expiration.getTime() : expiration;
+    if (!Number.isFinite(expiresMillis)) {
+      throw new GalaxyFDSClientException(
+        'expiration must be a valid Date or a finite epoch time in milliseconds',
+      );
+    }
+
     try {
       const base = new URL(baseUri);
       const objectPart = objectName != null && objectName.length > 0 ? '/' + objectName : '';
-      const expiresMillis = expiration instanceof Date ? expiration.getTime() : expiration;
 
       // Encode the path as java.net.URI's constructor would. Signing re-parses
       // this URI and decodes the path back, so the signature is unaffected.
