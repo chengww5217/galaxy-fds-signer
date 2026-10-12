@@ -31,11 +31,14 @@ npm install galaxy-fds-sdk-nodejs
 ### Generate an `Authorization` header
 
 ```ts
-import { GalaxyFDSClient, BasicFDSCredential, HttpMethod } from 'galaxy-fds-sdk-nodejs';
+import { GalaxyFDSClient, HttpMethod } from 'galaxy-fds-sdk-nodejs';
 
-const client = new GalaxyFDSClient(
-  new BasicFDSCredential('your-access-id', 'your-access-secret'),
-);
+// A plain { accessId, accessSecret } object works, as does any
+// GalaxyFDSCredential implementation such as BasicFDSCredential.
+const client = new GalaxyFDSClient({
+  accessId: 'your-access-id',
+  accessSecret: 'your-access-secret',
+});
 
 const uri = 'http://files.fds.api.xiaomi.com/my-bucket/my-object';
 const headers = { date: new Date().toUTCString() };
@@ -50,11 +53,12 @@ const authorization = client.getAuthorizationHeader(HttpMethod.GET, uri, headers
 ### Generate a pre-signed URI
 
 ```ts
-import { GalaxyFDSClient, BasicFDSCredential, HttpMethod, SubResource } from 'galaxy-fds-sdk-nodejs';
+import { GalaxyFDSClient, SubResource } from 'galaxy-fds-sdk-nodejs';
 
-const client = new GalaxyFDSClient(
-  new BasicFDSCredential('your-access-id', 'your-access-secret'),
-);
+const client = new GalaxyFDSClient({
+  accessId: 'your-access-id',
+  accessSecret: 'your-access-secret',
+});
 
 // Valid for one hour from now.
 const expiration = new Date(Date.now() + 60 * 60 * 1000);
@@ -62,13 +66,15 @@ const expiration = new Date(Date.now() + 60 * 60 * 1000);
 // Download URL
 const downloadUri = client.generatePresignedUri('my-bucket', 'my-object', expiration);
 
-// Upload URL (PUT)
-const uploadUri = client.generatePresignedUri('my-bucket', 'my-object', expiration, HttpMethod.PUT);
+// Upload URL (PUT) — the options form avoids null placeholders
+const uploadUri = client.generatePresignedUri('my-bucket', 'my-object', expiration, {
+  method: 'PUT',
+});
 
 // Pre-signed URI targeting a sub-resource (e.g. ACL)
-const aclUri = client.generatePresignedUri('my-bucket', 'my-object', expiration, HttpMethod.GET, [
-  SubResource.ACL,
-]);
+const aclUri = client.generatePresignedUri('my-bucket', 'my-object', expiration, {
+  subResources: [SubResource.ACL],
+});
 
 // CDN variant
 const cdnUri = client.generatePresignedCdnUri('my-bucket', 'my-object', expiration);
@@ -105,9 +111,10 @@ const signature = Signer.signToBase64(
 | Export | Description |
 | --- | --- |
 | `GalaxyFDSClient` | High-level client for auth headers and pre-signed URIs |
-| `BasicFDSCredential` | Static access-id / access-secret credential |
+| `BasicFDSCredential` | Static access-id / access-secret credential (a plain `{ accessId, accessSecret }` object works too) |
+| `PresignOptions` | Options-object form for the pre-signing methods |
 | `Signer` | Low-level signing primitives (`sign`, `signToBase64`, `getAuthorizationHeader`, `generatePresignedUri`) |
-| `HttpMethod`, `SignAlgorithm`, `SubResource`, `XiaomiHeader` | Enums ported from the Java SDK |
+| `HttpMethod`, `SignAlgorithm`, `SubResource`, `XiaomiHeader` | Constant maps with literal union types, ported from the Java SDK enums |
 | `GalaxyFDSClientException` | Error type thrown by the SDK |
 | `calcMD5`, `urlEncode`, `getGMTDatetime`, `parseUri`, `parseUriParameters` | Signing utilities |
 
