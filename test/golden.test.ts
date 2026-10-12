@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest';
 
+import { HeaderMultiMap } from '../src/auth/signer.js';
 import {
   constructStringToSign,
-  HeaderMultiMap,
   HttpMethod,
   SignAlgorithm,
   Signer,

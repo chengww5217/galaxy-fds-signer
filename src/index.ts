@@ -24,7 +24,6 @@ export {
 } from './credential.js';
 export {
   Signer,
-  HeaderMultiMap,
   type HttpHeaders,
   constructStringToSign,
   canonicalizeXiaomiHeaders,

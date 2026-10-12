@@ -219,25 +219,26 @@ export const Signer = {
 export function constructStringToSign(
   httpMethod: HttpMethod,
   uri: string,
-  httpHeaders: HeaderMultiMap,
+  httpHeaders: HttpHeaders | undefined,
 ): string {
+  const headers = HeaderMultiMap.from(httpHeaders);
   const parts = parseUri(uri);
   let builder = '';
   builder += httpMethod + '\n';
-  builder += httpHeaders.getFirst(Common.CONTENT_MD5) + '\n';
-  builder += getContentType(httpHeaders) + '\n';
+  builder += headers.getFirst(Common.CONTENT_MD5) + '\n';
+  builder += getContentType(headers) + '\n';
 
   const expires = getExpires(parts.query);
   if (expires > 0) {
     // For a pre-signed URI the expiration replaces the date line.
     builder += expires + '\n';
   } else {
-    const xiaomiDate = httpHeaders.getFirst(XiaomiHeader.DATE);
-    const date = xiaomiDate === '' ? httpHeaders.getFirst(Common.DATE) : '';
+    const xiaomiDate = headers.getFirst(XiaomiHeader.DATE);
+    const date = xiaomiDate === '' ? headers.getFirst(Common.DATE) : '';
     builder += date + '\n';
   }
 
-  builder += canonicalizeXiaomiHeaders(httpHeaders);
+  builder += canonicalizeXiaomiHeaders(headers);
   builder += canonicalizeResource(parts.path, parts.query);
   return builder;
 }
@@ -247,21 +248,19 @@ export function constructStringToSign(
  * the same key joined by `,`, sorted lexicographically by key, each rendered
  * as `key:value\n`.
  */
-export function canonicalizeXiaomiHeaders(headers: HeaderMultiMap): string {
-  if (!headers) {
-    return '';
-  }
+export function canonicalizeXiaomiHeaders(headers: HttpHeaders | undefined): string {
+  const map = HeaderMultiMap.from(headers);
 
   // Group by lower-cased key, joining multiple values with ",".
   const sorted = new Map<string, string[]>();
-  for (const [k] of headers.entries()) {
+  for (const [k] of map.entries()) {
     const key = k.toLowerCase();
     if (!key.startsWith(Common.XIAOMI_HEADER_PREFIX)) {
       continue;
     }
     if (!sorted.has(key)) {
       // Collect every value for this original-cased key once.
-      sorted.set(key, headers.get(k));
+      sorted.set(key, map.get(k));
     }
   }
 
