@@ -1,7 +1,13 @@
 import { createHmac } from 'node:crypto';
 
 import { Common, GALAXY_V2_PREFIX, MULTIPART_FORM_DATA } from '../common.js';
-import { HttpMethod, SIGN_ALGORITHM_DIGEST, SignAlgorithm, SUB_RESOURCE_SET } from '../enums.js';
+import {
+  HttpMethod,
+  SIGN_ALGORITHM_DIGEST,
+  SignAlgorithm,
+  SUB_RESOURCE_SET,
+  XiaomiHeader,
+} from '../enums.js';
 import { GalaxyFDSClientException } from '../errors.js';
 import { encodeUriPath, parseUri, parseUriParameters, urlEncode } from './utils.js';
 
@@ -226,7 +232,7 @@ export function constructStringToSign(
     // For a pre-signed URI the expiration replaces the date line.
     builder += expires + '\n';
   } else {
-    const xiaomiDate = httpHeaders.getFirst('x-xiaomi-date');
+    const xiaomiDate = httpHeaders.getFirst(XiaomiHeader.DATE);
     const date = xiaomiDate === '' ? httpHeaders.getFirst(Common.DATE) : '';
     builder += date + '\n';
   }
