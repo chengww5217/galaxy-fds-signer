@@ -87,4 +87,44 @@ describe('GalaxyFDSClient', () => {
     expect(() => new GalaxyFDSClient({} as never)).toThrow(GalaxyFDSClientException);
     expect(() => new GalaxyFDSClient({ accessId: ACCESS_ID } as never)).toThrow('credential');
   });
+
+  it('supports an options object equivalent to the positional form', () => {
+    const client = newClient();
+    const viaOptions = client.generatePresignedUri('b', 'o', 1700000000000, {
+      method: HttpMethod.PUT,
+      contentType: 'image/png',
+      contentMD5: '1B2M2Y8AsgTpgAmY7PhCfg==',
+    });
+    const viaPositional = client.generatePresignedUri(
+      'b',
+      'o',
+      1700000000000,
+      HttpMethod.PUT,
+      null,
+      'image/png',
+      '1B2M2Y8AsgTpgAmY7PhCfg==',
+    );
+    expect(viaOptions).toBe(viaPositional);
+  });
+
+  it('accepts a plain string as the method in the options object', () => {
+    const client = newClient();
+    expect(client.generatePresignedUri('b', 'o', 1700000000000, { method: 'PUT' })).toBe(
+      client.generatePresignedUri('b', 'o', 1700000000000, HttpMethod.PUT),
+    );
+  });
+
+  it('accepts sub-resources in the options object', () => {
+    const client = newClient();
+    expect(client.generatePresignedUri('b', 'o', 1700000000000, { subResources: ['acl'] })).toBe(
+      client.generatePresignedUri('b', 'o', 1700000000000, HttpMethod.GET, [SubResource.ACL]),
+    );
+  });
+
+  it('supports an options object for CDN pre-signing', () => {
+    const client = newClient();
+    const viaOptions = client.generatePresignedCdnUri('b', 'o', 1700000000000, { method: 'HEAD' });
+    const viaPositional = client.generatePresignedCdnUri('b', 'o', 1700000000000, HttpMethod.HEAD);
+    expect(viaOptions).toBe(viaPositional);
+  });
 });

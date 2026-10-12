@@ -20,6 +20,21 @@ export interface FDSClientOptions {
 }
 
 /**
+ * Options for pre-signing, as an alternative to the positional parameters of
+ * {@link GalaxyFDSClient.generatePresignedUri}.
+ */
+export interface PresignOptions {
+  /** The HTTP method the pre-signed URI will be used with (defaults to GET). */
+  method?: HttpMethod;
+  /** Optional sub-resource fragments (e.g. `["acl"]`). */
+  subResources?: Array<SubResource | string> | null;
+  /** Optional content type included in the signature. */
+  contentType?: string;
+  /** Optional content-md5 included in the signature. */
+  contentMD5?: string;
+}
+
+/**
  * A thin client exposing the authentication and pre-signed URI capabilities of
  * the Galaxy FDS Java SDK, keeping the same method shapes where practical.
  *
@@ -69,6 +84,20 @@ export class GalaxyFDSClient {
   /**
    * Generates a pre-signed URI for the given object.
    *
+   * @param bucketName The bucket name.
+   * @param objectName The object name.
+   * @param expiration Expiration time (`Date` or epoch milliseconds).
+   * @param options    Method, sub-resources and signed headers.
+   */
+  generatePresignedUri(
+    bucketName: string,
+    objectName: string,
+    expiration: Date | number,
+    options?: PresignOptions,
+  ): string;
+  /**
+   * Generates a pre-signed URI for the given object (positional form).
+   *
    * @param bucketName   The bucket name.
    * @param objectName   The object name.
    * @param expiration   Expiration time (`Date` or epoch milliseconds).
@@ -81,20 +110,30 @@ export class GalaxyFDSClient {
     bucketName: string,
     objectName: string,
     expiration: Date | number,
-    httpMethod: HttpMethod = HttpMethod.GET,
+    httpMethod?: HttpMethod,
+    subResources?: Array<SubResource | string> | null,
+    contentType?: string,
+    contentMD5?: string,
+  ): string;
+  generatePresignedUri(
+    bucketName: string,
+    objectName: string,
+    expiration: Date | number,
+    optionsOrMethod: PresignOptions | HttpMethod = HttpMethod.GET,
     subResources: Array<SubResource | string> | null = null,
     contentType?: string,
     contentMD5?: string,
   ): string {
+    const resolved = resolvePresignOptions(optionsOrMethod, subResources, contentType, contentMD5);
     return this.presign(
       this.baseUri,
       bucketName,
       objectName,
       expiration,
-      httpMethod,
-      subResources,
-      contentType,
-      contentMD5,
+      resolved.method,
+      resolved.subResources,
+      resolved.contentType,
+      resolved.contentMD5,
     );
   }
 
@@ -107,20 +146,41 @@ export class GalaxyFDSClient {
     bucketName: string,
     objectName: string,
     expiration: Date | number,
-    httpMethod: HttpMethod = HttpMethod.GET,
+    options?: PresignOptions,
+  ): string;
+  /**
+   * Generates a pre-signed CDN URI for the given object (positional form).
+   *
+   * @see {@link generatePresignedUri}
+   */
+  generatePresignedCdnUri(
+    bucketName: string,
+    objectName: string,
+    expiration: Date | number,
+    httpMethod?: HttpMethod,
+    subResources?: Array<SubResource | string> | null,
+    contentType?: string,
+    contentMD5?: string,
+  ): string;
+  generatePresignedCdnUri(
+    bucketName: string,
+    objectName: string,
+    expiration: Date | number,
+    optionsOrMethod: PresignOptions | HttpMethod = HttpMethod.GET,
     subResources: Array<SubResource | string> | null = null,
     contentType?: string,
     contentMD5?: string,
   ): string {
+    const resolved = resolvePresignOptions(optionsOrMethod, subResources, contentType, contentMD5);
     return this.presign(
       this.cdnBaseUri,
       bucketName,
       objectName,
       expiration,
-      httpMethod,
-      subResources,
-      contentType,
-      contentMD5,
+      resolved.method,
+      resolved.subResources,
+      resolved.contentType,
+      resolved.contentMD5,
     );
   }
 
@@ -161,4 +221,38 @@ export class GalaxyFDSClient {
       headers,
     );
   }
+}
+
+/** Fully-resolved pre-sign parameters, ready for the private presign helper. */
+interface ResolvedPresignOptions {
+  method: HttpMethod;
+  subResources: Array<SubResource | string> | null;
+  contentType?: string;
+  contentMD5?: string;
+}
+
+/**
+ * Merges the two public call shapes (options object vs. positional
+ * parameters) into one normalized structure.
+ */
+function resolvePresignOptions(
+  optionsOrMethod: PresignOptions | HttpMethod,
+  subResources: Array<SubResource | string> | null,
+  contentType: string | undefined,
+  contentMD5: string | undefined,
+): ResolvedPresignOptions {
+  if (optionsOrMethod !== null && typeof optionsOrMethod === 'object') {
+    return {
+      method: optionsOrMethod.method ?? HttpMethod.GET,
+      subResources: optionsOrMethod.subResources ?? null,
+      contentType: optionsOrMethod.contentType,
+      contentMD5: optionsOrMethod.contentMD5,
+    };
+  }
+  return {
+    method: optionsOrMethod ?? HttpMethod.GET,
+    subResources,
+    contentType,
+    contentMD5,
+  };
 }

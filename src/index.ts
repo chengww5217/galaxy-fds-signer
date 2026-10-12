@@ -39,4 +39,4 @@ export {
   encodeUriPath,
   calcMD5,
 } from './auth/utils.js';
-export { GalaxyFDSClient, type FDSClientOptions } from './client.js';
+export { GalaxyFDSClient, type FDSClientOptions, type PresignOptions } from './client.js';
