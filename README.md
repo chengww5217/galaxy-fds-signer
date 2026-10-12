@@ -1,5 +1,6 @@
 # galaxy-fds-sdk-nodejs
 
+[![CI](https://github.com/chengww5217/galaxy-fds-sdk-nodejs/actions/workflows/ci.yml/badge.svg)](https://github.com/chengww5217/galaxy-fds-sdk-nodejs/actions/workflows/ci.yml)
 [![License](https://img.shields.io/badge/license-Apache--2.0-blue.svg)](./LICENSE)
 
 A Node.js / TypeScript SDK for [Xiaomi Galaxy FDS](https://docs.api.xiaomi.com/) (File Data Storage), focused on **Galaxy-V2 request signing** and **pre-signed URI generation**.
