@@ -23,6 +23,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `cdnEndpoint` / `enableHttps` / `enableCdnForUpload` / `enableCdnForDownload`
   options on `GalaxyFDSClient`, ported from the Java SDK's
   `FDSClientConfiguration`.
+- Virtual-hosted-style addressing for `*.mi-fds.com` endpoints: pre-signed URIs
+  place the bucket in the subdomain (`{bucket}.{region}.mi-fds.com`), matching
+  the Java SDK 3.0.48 behaviour.
 
 ### Changed
 

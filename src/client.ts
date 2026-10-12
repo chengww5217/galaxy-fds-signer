@@ -208,7 +208,7 @@ export class GalaxyFDSClient {
       subResources == null ? null : subResources.map((s) => s.toString());
 
     return Signer.generatePresignedUri(
-      baseUri,
+      this.applyVirtualAddressing(baseUri, bucketName),
       bucketName,
       objectName,
       subResourceNames,
@@ -219,6 +219,30 @@ export class GalaxyFDSClient {
       this.signAlgorithm,
       headers,
     );
+  }
+
+  /**
+   * Rewrites the host of `baseUri` to virtual-hosted style
+   * (`{bucket}.{endpoint}`) when the configured endpoint uses `*.mi-fds.com`
+   * addressing. Mirrors the Java SDK's `GalaxyFDSClient.generatePresignedUri`,
+   * which keeps the bucket in the path but moves it into the subdomain. The
+   * host is not part of the string to sign, so the signature is unaffected.
+   */
+  private applyVirtualAddressing(baseUri: string, bucketName: string): string {
+    const endpoint = this.config.endpoint;
+    if (
+      !this.config.shouldUseVirtualAddressing() ||
+      endpoint === undefined ||
+      bucketName.length === 0
+    ) {
+      return baseUri;
+    }
+
+    const url = new URL(baseUri);
+    if (url.hostname !== endpoint.split(':')[0].toLowerCase()) {
+      return baseUri;
+    }
+    return `${url.protocol}//${bucketName}.${url.host}/`;
   }
 }
 
