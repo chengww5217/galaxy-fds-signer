@@ -74,11 +74,7 @@ export class FDSEndpointConfiguration {
     let regionName = options.regionName;
 
     if (endpoint !== undefined) {
-      if (typeof endpoint !== 'string' || endpoint.length === 0) {
-        throw new GalaxyFDSSignerError('INVALID_ENDPOINT', 'endpoint must be a non-empty string', {
-          field: 'endpoint',
-        });
-      }
+      endpoint = validateHost(endpoint, options.endpoint === undefined ? 'regionName' : 'endpoint');
       const host = endpoint.split(':')[0];
       if (host.endsWith(URI_NET_SUFFIX)) {
         uriSuffix = URI_NET_SUFFIX;
@@ -103,9 +99,9 @@ export class FDSEndpointConfiguration {
     // HTTPS whenever an endpoint is configured.
     this.enableHttps = virtual ? true : (options.enableHttps ?? endpoint !== undefined);
 
-    if (options.cdnEndpoint !== undefined) {
-      this.cdnEndpoint = options.cdnEndpoint;
-    } else if (endpoint !== undefined && !virtual) {
+    if (options.cdnEndpoint !== undefined && options.cdnEndpoint !== '') {
+      this.cdnEndpoint = validateHost(options.cdnEndpoint, 'cdnEndpoint');
+    } else if (options.cdnEndpoint === undefined && endpoint !== undefined && !virtual) {
       this.cdnEndpoint = URI_CDN + '.' + regionName + URI_CDN_SUFFIX;
     } else {
       this.cdnEndpoint = undefined;
@@ -153,6 +149,30 @@ export class FDSEndpointConfiguration {
     }
     return (this.enableHttps ? URI_HTTPS_PREFIX : URI_HTTP_PREFIX) + host + '/';
   }
+}
+
+/** `host[:port]`: dot-separated DNS labels (lower case) and an optional port. */
+const HOST_AND_PORT =
+  /^(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)*[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?(?::(\d{1,5}))?$/;
+
+/**
+ * Validates an endpoint-style `host[:port]` and returns it lower-cased (host
+ * names are case-insensitive). Anything else, e.g. a scheme, a path or
+ * userinfo (`evil.com/x.fds.api.xiaomi.com`), would be spliced verbatim into
+ * the base URI and redirect the signed request to another host.
+ */
+function validateHost(value: unknown, name: string): string {
+  const host = typeof value === 'string' ? value.toLowerCase() : undefined;
+  const match = host === undefined ? null : HOST_AND_PORT.exec(host);
+  const port = match?.[1] === undefined ? undefined : Number(match[1]);
+  if (host === undefined || match === null || (port !== undefined && (port < 1 || port > 65535))) {
+    throw new GalaxyFDSSignerError(
+      'INVALID_ENDPOINT',
+      `${name} must be a host name with an optional port, e.g. cnbj1.fds.api.xiaomi.com: ${String(value)}`,
+      { field: name },
+    );
+  }
+  return host;
 }
 
 function validateBaseUri(uri: string | undefined, name: string): string | undefined {

@@ -498,7 +498,7 @@ function applyVirtualAddressing(
     return baseUri;
   }
   const url = new URL(baseUri);
-  if (url.hostname !== endpoint.split(':')[0].toLowerCase()) {
+  if (url.hostname !== endpoint.split(':')[0]) {
     return baseUri;
   }
   assertDnsLabel(bucket, 'INVALID_BUCKET');

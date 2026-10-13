@@ -59,6 +59,36 @@ describe('FDSEndpointConfiguration endpoint parsing', () => {
       GalaxyFDSSignerError,
     );
   });
+
+  it('lower-cases the endpoint, so upper-case input is recognized', () => {
+    const config = new FDSEndpointConfiguration({ endpoint: 'CNBJ1.FDS.API.XIAOMI.COM:8443' });
+    expect(config.endpoint).toBe('cnbj1.fds.api.xiaomi.com:8443');
+    expect(config.regionName).toBe('cnbj1');
+    expect(config.getBaseUri()).toBe('https://cnbj1.fds.api.xiaomi.com:8443/');
+  });
+
+  it.each([
+    'evil.com/x.fds.api.xiaomi.com',
+    'user@cnbj1.fds.api.xiaomi.com',
+    'https://cnbj1.fds.api.xiaomi.com',
+    'cnbj1.fds.api.xiaomi.com/',
+    'cnbj1.fds.api.xiaomi.com:0',
+    'cnbj1.fds.api.xiaomi.com:65536',
+    'cnbj1.fds.api.xiaomi.com:',
+    'cn bj1.fds.api.xiaomi.com',
+    '-x.fds.api.xiaomi.com',
+    '',
+  ])('rejects endpoint %j that is not host[:port]', (endpoint) => {
+    expect(() => new FDSEndpointConfiguration({ endpoint })).toThrow(
+      expect.objectContaining({ code: 'INVALID_ENDPOINT', field: 'endpoint' }),
+    );
+  });
+
+  it('validates a region name as part of the derived endpoint', () => {
+    expect(() => new FDSEndpointConfiguration({ regionName: 'evil.com/x' })).toThrow(
+      expect.objectContaining({ code: 'INVALID_ENDPOINT', field: 'regionName' }),
+    );
+  });
 });
 
 describe('FDSEndpointConfiguration virtual-hosted endpoints', () => {
@@ -82,6 +112,26 @@ describe('FDSEndpointConfiguration virtual-hosted endpoints', () => {
       cdnEndpoint: 'cdn.example.com',
     });
     expect(config.getCdnBaseUri()).toBe('https://cdn.example.com/');
+  });
+
+  it('lower-cases and validates an explicit CDN endpoint', () => {
+    expect(
+      new FDSEndpointConfiguration({ endpoint: 'files.mi-fds.com', cdnEndpoint: 'CDN.Example.com' })
+        .cdnEndpoint,
+    ).toBe('cdn.example.com');
+    expect(
+      () => new FDSEndpointConfiguration({ endpoint: 'files.mi-fds.com', cdnEndpoint: 'a.com/b' }),
+    ).toThrow(expect.objectContaining({ code: 'INVALID_ENDPOINT', field: 'cdnEndpoint' }));
+  });
+
+  it('treats an empty CDN endpoint as unset', () => {
+    const config = new FDSEndpointConfiguration({
+      endpoint: 'files.fds.api.xiaomi.com',
+      cdnEndpoint: '',
+    });
+    expect(() => config.getCdnBaseUri()).toThrow(
+      expect.objectContaining({ code: 'CDN_NOT_CONFIGURED' }),
+    );
   });
 });
 

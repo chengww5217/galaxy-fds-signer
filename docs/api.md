@@ -36,7 +36,7 @@ Validates the options and returns a frozen signer object. Any configuration erro
 | `accessSecret` | `string` | required | Secret access key. It is kept in a closure and never exposed on the signer, in logs or in results. |
 | `algorithm` | `'HmacSHA1' \| 'HmacSHA256' \| 'HmacMD5'` | `'HmacSHA1'` | HMAC algorithm. |
 | `bucket` | `string` | — | Default bucket for every request that does not name one itself. An input `bucket` overrides it. It must not contain `/`, and on virtual-hosted (`.mi-fds.com`) endpoints it must be a single DNS label. |
-| `endpoint` | `string` | — | Service host, optionally with a port. The host must end with `.fds.api.xiaomi.com` (public), `-fds.api.xiaomi.net` (internal) or `.mi-fds.com` (virtual-hosted). The region name is taken from the prefix. |
+| `endpoint` | `string` | — | Service host, optionally with a port (`host[:port]`, no scheme or path; case-insensitive). The host must end with `.fds.api.xiaomi.com` (public), `-fds.api.xiaomi.net` (internal) or `.mi-fds.com` (virtual-hosted). The region name is taken from the prefix. |
 | `regionName` | `string` | — | Used only when `endpoint` is omitted. Sets the endpoint to `{regionName}.fds.api.xiaomi.com`. |
 | `cdnEndpoint` | `string` | `cdn.{region}.fds.api.mi-img.com` | CDN host for `cdn: true`. No CDN host is derived for `*.mi-fds.com` endpoints, so set this yourself to use the CDN there. |
 | `enableHttps` | `boolean` | `true` if an endpoint is set | Ignored for `*.mi-fds.com` endpoints, which always use HTTPS. |
@@ -230,7 +230,7 @@ class GalaxyFDSSignerError extends Error {
 | `INVALID_OPTIONS` | config | `options` | `options` is not an object |
 | `INVALID_CREDENTIALS` | config | `accessId`, `accessSecret` | Missing, empty or non-string credentials |
 | `UNSUPPORTED_ALGORITHM` | config | `algorithm` | Unknown `algorithm` |
-| `INVALID_ENDPOINT` | config | `endpoint`, `baseUri`, `cdnBaseUri` | An empty `endpoint` or one with an unrecognized suffix, or a `baseUri` / `cdnBaseUri` that is not an absolute http(s) URL |
+| `INVALID_ENDPOINT` | config | `endpoint`, `regionName`, `cdnEndpoint`, `baseUri`, `cdnBaseUri` | An `endpoint` / `cdnEndpoint` that is not `host[:port]` (or a `regionName` that does not form one), an `endpoint` with an unrecognized suffix, or a `baseUri` / `cdnBaseUri` that is not an absolute http(s) URL |
 | `INVALID_BUCKET_OPTION` | config | `bucket` | The configured `bucket` is empty, contains `/`, or is not a DNS label on a `*.mi-fds.com` endpoint |
 | `CDN_NOT_CONFIGURED` | config | `cdn` | `cdn: true` with no CDN endpoint, e.g. `*.mi-fds.com` without `cdnEndpoint` |
 | `UNSUPPORTED_METHOD` | input | `method` | Unsupported `method` |
