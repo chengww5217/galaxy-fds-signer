@@ -30,8 +30,15 @@ const SUBTLE_HASH: Partial<Record<SignAlgorithm, string>> = {
   [SignAlgorithm.HmacSHA256]: 'SHA-256',
 };
 
-function subtle(): SubtleCrypto {
-  const s = (globalThis as { crypto?: Crypto }).crypto?.subtle;
+/**
+ * The Web Crypto `SubtleCrypto` surface, derived from `globalThis` so the type
+ * does not depend on the bare `Crypto` / `SubtleCrypto` globals: only newer
+ * `@types/node` versions expose those, while v22 keeps them module-scoped.
+ */
+type SubtleCryptoLike = typeof globalThis.crypto.subtle;
+
+function subtle(): SubtleCryptoLike {
+  const s = (globalThis as { crypto?: { subtle?: SubtleCryptoLike } }).crypto?.subtle;
   if (s === undefined) {
     throw new GalaxyFDSSignerError(
       'CRYPTO_UNAVAILABLE',
