@@ -1,0 +1,926 @@
+[
+  {
+    "group": "service",
+    "javaMethod": "listBuckets",
+    "input": {
+      "method": "GET"
+    },
+    "presignable": false,
+    "javaPath": "/",
+    "javaSignature": "f8fw7oXKjrfoC49O6lYtat5H5+s="
+  },
+  {
+    "group": "service",
+    "javaMethod": "listAuthorizedBuckets",
+    "input": {
+      "method": "GET",
+      "query": {
+        "authorizedBuckets": ""
+      }
+    },
+    "presignable": false,
+    "javaPath": "/?authorizedBuckets=",
+    "javaSignature": "f8fw7oXKjrfoC49O6lYtat5H5+s="
+  },
+  {
+    "group": "bucket",
+    "javaMethod": "createBucket",
+    "input": {
+      "method": "PUT",
+      "bucket": "bkt",
+      "headers": {
+        "content-type": "application/json; charset=UTF-8"
+      }
+    },
+    "presignable": false,
+    "javaPath": "/bkt",
+    "javaSignature": "GdCCForepq4Uu0wQyEh339mGjOY="
+  },
+  {
+    "group": "bucket",
+    "javaMethod": "deleteBucket",
+    "input": {
+      "method": "DELETE",
+      "bucket": "bkt"
+    },
+    "presignable": true,
+    "javaPath": "/bkt",
+    "javaSignature": "QydemHmLUM+TK0G++fOYYge8FB0=",
+    "javaPresignedSignature": "/5veYVkeU1TS3Z8PB+XSekI7jJM="
+  },
+  {
+    "group": "bucket",
+    "javaMethod": "getBucketInfo",
+    "input": {
+      "method": "GET",
+      "bucket": "bkt"
+    },
+    "presignable": true,
+    "javaPath": "/bkt",
+    "javaSignature": "MoxmMcRJpGugMlTzPtfpMVyMwKY=",
+    "javaPresignedSignature": "q1r7O2l2S9siICoHMltthzD2HxE="
+  },
+  {
+    "group": "bucket",
+    "javaMethod": "doesBucketExist",
+    "input": {
+      "method": "HEAD",
+      "bucket": "bkt"
+    },
+    "presignable": true,
+    "javaPath": "/bkt",
+    "javaSignature": "SXUPLJ7IVGtMSZNlX/n0wGncy5Y=",
+    "javaPresignedSignature": "TfBEpukOpTuG9r5fzT89F6yFiA0="
+  },
+  {
+    "group": "bucket",
+    "javaMethod": "listObjects",
+    "input": {
+      "method": "GET",
+      "bucket": "bkt",
+      "query": {
+        "isBackup": "false",
+        "prefix": "dir/",
+        "delimiter": "/",
+        "reverse": "false"
+      }
+    },
+    "presignable": false,
+    "javaPath": "/bkt?isBackup=false&prefix=dir%2F&delimiter=%2F&reverse=false",
+    "javaSignature": "MoxmMcRJpGugMlTzPtfpMVyMwKY="
+  },
+  {
+    "group": "bucket",
+    "javaMethod": "listVersions",
+    "input": {
+      "method": "GET",
+      "bucket": "bkt",
+      "query": {
+        "versions": "",
+        "prefix": "dir/",
+        "delimiter": "/"
+      }
+    },
+    "presignable": false,
+    "javaPath": "/bkt?versions=&prefix=dir%2F&delimiter=%2F",
+    "javaSignature": "MoxmMcRJpGugMlTzPtfpMVyMwKY="
+  },
+  {
+    "group": "bucket",
+    "javaMethod": "listTrashObjects",
+    "input": {
+      "method": "GET",
+      "bucket": "trash",
+      "query": {
+        "isBackup": "false",
+        "prefix": "bkt/dir/",
+        "delimiter": "/",
+        "reverse": "false"
+      }
+    },
+    "presignable": false,
+    "javaPath": "/trash?isBackup=false&prefix=bkt%2Fdir%2F&delimiter=%2F&reverse=false",
+    "javaSignature": "KplN+0HEO7I+TDDc9CaUon79qic="
+  },
+  {
+    "group": "bucket",
+    "javaMethod": "getBucketAcl",
+    "input": {
+      "method": "GET",
+      "bucket": "bkt",
+      "subResources": [
+        "acl"
+      ]
+    },
+    "presignable": true,
+    "javaPath": "/bkt?acl",
+    "javaSignature": "IoECmHMc1XSYTgtYbMGoPx1fByo=",
+    "javaPresignedSignature": "F4JGQteywcdBWpwpeWkvuboVvo0="
+  },
+  {
+    "group": "bucket",
+    "javaMethod": "setBucketAcl",
+    "input": {
+      "method": "PUT",
+      "bucket": "bkt",
+      "subResources": [
+        "acl"
+      ],
+      "headers": {
+        "content-type": "application/json; charset=UTF-8"
+      }
+    },
+    "presignable": true,
+    "javaPath": "/bkt?acl",
+    "javaSignature": "Y3ao53a6AcyA9dRUgOYWTrj/zNs=",
+    "javaPresignedSignature": "tRVCQzwV55uMFdIpK0vp6uEQ4Eo="
+  },
+  {
+    "group": "bucket",
+    "javaMethod": "deleteBucketAcl",
+    "input": {
+      "method": "PUT",
+      "bucket": "bkt",
+      "subResources": [
+        "acl"
+      ],
+      "query": {
+        "action": "delete"
+      },
+      "headers": {
+        "content-type": "application/json; charset=UTF-8"
+      }
+    },
+    "presignable": false,
+    "javaPath": "/bkt?acl&action=delete",
+    "javaSignature": "Y3ao53a6AcyA9dRUgOYWTrj/zNs="
+  },
+  {
+    "group": "bucket",
+    "javaMethod": "getBucketQuota",
+    "input": {
+      "method": "GET",
+      "bucket": "bkt",
+      "subResources": [
+        "quota"
+      ]
+    },
+    "presignable": true,
+    "javaPath": "/bkt?quota",
+    "javaSignature": "OOOSqw62cepKLjamiZwj9U1JVhY=",
+    "javaPresignedSignature": "kH1y5djCzZ+/Wvw1MiebMfSFcSA="
+  },
+  {
+    "group": "bucket",
+    "javaMethod": "setBucketQuota",
+    "input": {
+      "method": "PUT",
+      "bucket": "bkt",
+      "subResources": [
+        "quota"
+      ],
+      "headers": {
+        "content-type": "application/json; charset=UTF-8"
+      }
+    },
+    "presignable": true,
+    "javaPath": "/bkt?quota",
+    "javaSignature": "WKMDuIipNH5LwNQxkO8QIPuzAyo=",
+    "javaPresignedSignature": "1ILCY3DCOeIIqcfIXvibJ3+lk4c="
+  },
+  {
+    "group": "bucket",
+    "javaMethod": "deleteObjects",
+    "input": {
+      "method": "PUT",
+      "bucket": "bkt",
+      "query": {
+        "deleteObjects": ""
+      },
+      "headers": {
+        "content-type": "application/json; charset=UTF-8"
+      }
+    },
+    "presignable": false,
+    "javaPath": "/bkt?deleteObjects=",
+    "javaSignature": "GdCCForepq4Uu0wQyEh339mGjOY="
+  },
+  {
+    "group": "bucket",
+    "javaMethod": "getAccessLogConfig",
+    "input": {
+      "method": "GET",
+      "bucket": "bkt",
+      "query": {
+        "accessLog": ""
+      }
+    },
+    "presignable": false,
+    "javaPath": "/bkt?accessLog=",
+    "javaSignature": "MoxmMcRJpGugMlTzPtfpMVyMwKY="
+  },
+  {
+    "group": "bucket",
+    "javaMethod": "updateAccessLogConfig",
+    "input": {
+      "method": "PUT",
+      "bucket": "bkt",
+      "query": {
+        "accessLog": ""
+      },
+      "headers": {
+        "content-type": "application/json; charset=UTF-8"
+      }
+    },
+    "presignable": false,
+    "javaPath": "/bkt?accessLog=",
+    "javaSignature": "GdCCForepq4Uu0wQyEh339mGjOY="
+  },
+  {
+    "group": "bucket",
+    "javaMethod": "getLifecycleConfig",
+    "input": {
+      "method": "GET",
+      "bucket": "bkt",
+      "query": {
+        "lifecycle": ""
+      }
+    },
+    "presignable": false,
+    "javaPath": "/bkt?lifecycle=",
+    "javaSignature": "MoxmMcRJpGugMlTzPtfpMVyMwKY="
+  },
+  {
+    "group": "bucket",
+    "javaMethod": "updateLifecycleConfig",
+    "input": {
+      "method": "PUT",
+      "bucket": "bkt",
+      "query": {
+        "lifecycle": ""
+      },
+      "headers": {
+        "content-type": "application/json; charset=UTF-8"
+      }
+    },
+    "presignable": false,
+    "javaPath": "/bkt?lifecycle=",
+    "javaSignature": "GdCCForepq4Uu0wQyEh339mGjOY="
+  },
+  {
+    "group": "bucket",
+    "javaMethod": "getBucketCORSConfiguration",
+    "input": {
+      "method": "GET",
+      "bucket": "bkt",
+      "query": {
+        "cors": ""
+      }
+    },
+    "presignable": false,
+    "javaPath": "/bkt?cors=",
+    "javaSignature": "MoxmMcRJpGugMlTzPtfpMVyMwKY="
+  },
+  {
+    "group": "bucket",
+    "javaMethod": "updateBucketCORSConfiguration",
+    "input": {
+      "method": "PUT",
+      "bucket": "bkt",
+      "query": {
+        "cors": ""
+      },
+      "headers": {
+        "content-type": "application/json; charset=UTF-8"
+      }
+    },
+    "presignable": false,
+    "javaPath": "/bkt?cors=",
+    "javaSignature": "GdCCForepq4Uu0wQyEh339mGjOY="
+  },
+  {
+    "group": "bucket",
+    "javaMethod": "putDomainMapping",
+    "input": {
+      "method": "PUT",
+      "bucket": "bkt",
+      "query": {
+        "domain": "img.example.com",
+        "index": "index.html"
+      },
+      "headers": {
+        "content-type": "application/json; charset=UTF-8"
+      }
+    },
+    "presignable": false,
+    "javaPath": "/bkt?domain=img.example.com&index=index.html",
+    "javaSignature": "GdCCForepq4Uu0wQyEh339mGjOY="
+  },
+  {
+    "group": "bucket",
+    "javaMethod": "listDomainMappings",
+    "input": {
+      "method": "GET",
+      "bucket": "bkt",
+      "query": {
+        "domain": ""
+      }
+    },
+    "presignable": false,
+    "javaPath": "/bkt?domain=",
+    "javaSignature": "MoxmMcRJpGugMlTzPtfpMVyMwKY="
+  },
+  {
+    "group": "bucket",
+    "javaMethod": "deleteDomainMapping",
+    "input": {
+      "method": "DELETE",
+      "bucket": "bkt",
+      "query": {
+        "domain": "img.example.com"
+      }
+    },
+    "presignable": false,
+    "javaPath": "/bkt?domain=img.example.com",
+    "javaSignature": "QydemHmLUM+TK0G++fOYYge8FB0="
+  },
+  {
+    "group": "bucket",
+    "javaMethod": "setMirror",
+    "input": {
+      "method": "PUT",
+      "bucket": "bkt",
+      "query": {
+        "mirror": ""
+      },
+      "headers": {
+        "content-type": "application/json; charset=UTF-8"
+      }
+    },
+    "presignable": false,
+    "javaPath": "/bkt?mirror=",
+    "javaSignature": "GdCCForepq4Uu0wQyEh339mGjOY="
+  },
+  {
+    "group": "bucket",
+    "javaMethod": "getMirror",
+    "input": {
+      "method": "GET",
+      "bucket": "bkt",
+      "query": {
+        "mirror": ""
+      }
+    },
+    "presignable": false,
+    "javaPath": "/bkt?mirror=",
+    "javaSignature": "MoxmMcRJpGugMlTzPtfpMVyMwKY="
+  },
+  {
+    "group": "bucket",
+    "javaMethod": "deleteMirror",
+    "input": {
+      "method": "DELETE",
+      "bucket": "bkt",
+      "query": {
+        "mirror": ""
+      }
+    },
+    "presignable": false,
+    "javaPath": "/bkt?mirror=",
+    "javaSignature": "QydemHmLUM+TK0G++fOYYge8FB0="
+  },
+  {
+    "group": "bucket",
+    "javaMethod": "getTimestampAntiStealingLinkConfig",
+    "input": {
+      "method": "GET",
+      "bucket": "bkt",
+      "query": {
+        "antiStealingLink": ""
+      }
+    },
+    "presignable": false,
+    "javaPath": "/bkt?antiStealingLink=",
+    "javaSignature": "MoxmMcRJpGugMlTzPtfpMVyMwKY="
+  },
+  {
+    "group": "bucket",
+    "javaMethod": "updateTimestampAntiStealingLinkConfig",
+    "input": {
+      "method": "PUT",
+      "bucket": "bkt",
+      "query": {
+        "antiStealingLink": ""
+      },
+      "headers": {
+        "content-type": "application/json; charset=UTF-8"
+      }
+    },
+    "presignable": false,
+    "javaPath": "/bkt?antiStealingLink=",
+    "javaSignature": "GdCCForepq4Uu0wQyEh339mGjOY="
+  },
+  {
+    "group": "bucket",
+    "javaMethod": "deleteTimestampAntiStealingLinkConfig",
+    "input": {
+      "method": "DELETE",
+      "bucket": "bkt",
+      "query": {
+        "antiStealingLink": ""
+      }
+    },
+    "presignable": false,
+    "javaPath": "/bkt?antiStealingLink=",
+    "javaSignature": "QydemHmLUM+TK0G++fOYYge8FB0="
+  },
+  {
+    "group": "bucket",
+    "javaMethod": "migrateBucket",
+    "input": {
+      "method": "PUT",
+      "bucket": "bkt",
+      "query": {
+        "teamId": "team",
+        "orgId": "org",
+        "migrate": ""
+      },
+      "headers": {
+        "content-type": "application/json; charset=UTF-8"
+      }
+    },
+    "presignable": false,
+    "javaPath": "/bkt?teamId=team&orgId=org&migrate=",
+    "javaSignature": "GdCCForepq4Uu0wQyEh339mGjOY="
+  },
+  {
+    "group": "object",
+    "javaMethod": "putObject",
+    "input": {
+      "method": "PUT",
+      "bucket": "bkt",
+      "object": "dir/obj.txt",
+      "headers": {
+        "content-type": "text/plain",
+        "x-xiaomi-meta-k": "v"
+      }
+    },
+    "presignable": true,
+    "javaPath": "/bkt/dir/obj.txt",
+    "javaSignature": "v5yWxpvBzXqtU8I6zU7B3u6hwpI=",
+    "javaPresignedSignature": "Jeilc+H5RS4BaicgYscQQoGKs9c="
+  },
+  {
+    "group": "object",
+    "javaMethod": "postObject",
+    "input": {
+      "method": "POST",
+      "url": "https://cnbj1.fds.api.xiaomi.com/bkt/",
+      "headers": {
+        "content-type": "text/plain",
+        "x-xiaomi-meta-k": "v"
+      }
+    },
+    "presignable": false,
+    "javaPath": "/bkt/",
+    "javaSignature": "kYanEfpFY7iEsROr/aCVATgSq4E="
+  },
+  {
+    "group": "object",
+    "javaMethod": "getObject",
+    "input": {
+      "method": "GET",
+      "bucket": "bkt",
+      "object": "dir/obj.txt"
+    },
+    "presignable": true,
+    "javaPath": "/bkt/dir/obj.txt",
+    "javaSignature": "YRyn2p9ey2XtVTNEhUvpSaV8fVU=",
+    "javaPresignedSignature": "HvBVXR2RByiyKfgfTl9aH1WgvJI="
+  },
+  {
+    "group": "object",
+    "javaMethod": "getObjectRange",
+    "input": {
+      "method": "GET",
+      "bucket": "bkt",
+      "object": "dir/obj.txt",
+      "headers": {
+        "range": "bytes=10-"
+      }
+    },
+    "presignable": true,
+    "javaPath": "/bkt/dir/obj.txt",
+    "javaSignature": "YRyn2p9ey2XtVTNEhUvpSaV8fVU=",
+    "javaPresignedSignature": "HvBVXR2RByiyKfgfTl9aH1WgvJI="
+  },
+  {
+    "group": "object",
+    "javaMethod": "getObjectVersion",
+    "input": {
+      "method": "GET",
+      "bucket": "bkt",
+      "object": "dir/obj.txt",
+      "query": {
+        "versionId": "v1"
+      }
+    },
+    "presignable": false,
+    "javaPath": "/bkt/dir/obj.txt?versionId=v1",
+    "javaSignature": "YRyn2p9ey2XtVTNEhUvpSaV8fVU="
+  },
+  {
+    "group": "object",
+    "javaMethod": "doesObjectExist",
+    "input": {
+      "method": "HEAD",
+      "bucket": "bkt",
+      "object": "dir/obj.txt"
+    },
+    "presignable": true,
+    "javaPath": "/bkt/dir/obj.txt",
+    "javaSignature": "0GHAN/5/5qqY2X21cijpUrnZXzM=",
+    "javaPresignedSignature": "j10lbSNMg6xU29YaiLouil9juVE="
+  },
+  {
+    "group": "object",
+    "javaMethod": "deleteObject",
+    "input": {
+      "method": "DELETE",
+      "bucket": "bkt",
+      "object": "dir/obj.txt"
+    },
+    "presignable": true,
+    "javaPath": "/bkt/dir/obj.txt",
+    "javaSignature": "nmX8tvZEUo7zL24uOAOF0uAb6f4=",
+    "javaPresignedSignature": "vw0CazEP7hfmNaAUwyezlTjtAzI="
+  },
+  {
+    "group": "object",
+    "javaMethod": "getObjectMetadata",
+    "input": {
+      "method": "GET",
+      "bucket": "bkt",
+      "object": "dir/obj.txt",
+      "subResources": [
+        "metadata"
+      ]
+    },
+    "presignable": true,
+    "javaPath": "/bkt/dir/obj.txt?metadata",
+    "javaSignature": "9MDjVOKvJd0UvNvFdR3/wQaybag=",
+    "javaPresignedSignature": "b8jq92t4Zz5OPGAZP9GKBp+MTWU="
+  },
+  {
+    "group": "object",
+    "javaMethod": "setObjectMetadata",
+    "input": {
+      "method": "PUT",
+      "bucket": "bkt",
+      "object": "dir/obj.txt",
+      "query": {
+        "setMetaData": ""
+      },
+      "headers": {
+        "content-type": "application/json; charset=UTF-8"
+      }
+    },
+    "presignable": false,
+    "javaPath": "/bkt/dir/obj.txt?setMetaData=",
+    "javaSignature": "JrUzYrqWYBPrXr+hp6iE+sNHLLQ="
+  },
+  {
+    "group": "object",
+    "javaMethod": "getObjectAcl",
+    "input": {
+      "method": "GET",
+      "bucket": "bkt",
+      "object": "dir/obj.txt",
+      "subResources": [
+        "acl"
+      ]
+    },
+    "presignable": true,
+    "javaPath": "/bkt/dir/obj.txt?acl",
+    "javaSignature": "F7YESnI/ym2remOkMnECkSHwAA4=",
+    "javaPresignedSignature": "l6x53qPct5IMQCwlCP/u0ja4mwM="
+  },
+  {
+    "group": "object",
+    "javaMethod": "setObjectAcl",
+    "input": {
+      "method": "PUT",
+      "bucket": "bkt",
+      "object": "dir/obj.txt",
+      "subResources": [
+        "acl"
+      ],
+      "headers": {
+        "content-type": "application/json; charset=UTF-8"
+      }
+    },
+    "presignable": true,
+    "javaPath": "/bkt/dir/obj.txt?acl",
+    "javaSignature": "NhToQ7GM+GBVWLm63AXNlrqgFgI=",
+    "javaPresignedSignature": "sSGqLion1z67GWp/Ru9E8TR+1zc="
+  },
+  {
+    "group": "object",
+    "javaMethod": "deleteObjectAcl",
+    "input": {
+      "method": "PUT",
+      "bucket": "bkt",
+      "object": "dir/obj.txt",
+      "subResources": [
+        "acl"
+      ],
+      "query": {
+        "action": "delete"
+      },
+      "headers": {
+        "content-type": "application/json; charset=UTF-8"
+      }
+    },
+    "presignable": false,
+    "javaPath": "/bkt/dir/obj.txt?acl&action=delete",
+    "javaSignature": "NhToQ7GM+GBVWLm63AXNlrqgFgI="
+  },
+  {
+    "group": "object",
+    "javaMethod": "setPublic",
+    "input": {
+      "method": "PUT",
+      "bucket": "bkt",
+      "object": "dir/obj.txt",
+      "subResources": [
+        "acl"
+      ],
+      "headers": {
+        "content-type": "application/json; charset=UTF-8"
+      }
+    },
+    "presignable": true,
+    "javaPath": "/bkt/dir/obj.txt?acl",
+    "javaSignature": "NhToQ7GM+GBVWLm63AXNlrqgFgI=",
+    "javaPresignedSignature": "sSGqLion1z67GWp/Ru9E8TR+1zc="
+  },
+  {
+    "group": "object",
+    "javaMethod": "copyObject",
+    "input": {
+      "method": "PUT",
+      "bucket": "bkt2",
+      "object": "copy.txt",
+      "query": {
+        "cp": ""
+      },
+      "headers": {
+        "content-type": "application/json; charset=UTF-8"
+      }
+    },
+    "presignable": false,
+    "javaPath": "/bkt2/copy.txt?cp=",
+    "javaSignature": "vGhom74/74PCITGwXSnwpbyW3vI="
+  },
+  {
+    "group": "object",
+    "javaMethod": "renameObject",
+    "input": {
+      "method": "PUT",
+      "bucket": "bkt",
+      "object": "dir/obj.txt",
+      "query": {
+        "renameTo": "dir/new.txt"
+      },
+      "headers": {
+        "content-type": "application/octet-stream"
+      }
+    },
+    "presignable": false,
+    "javaPath": "/bkt/dir/obj.txt?renameTo=dir%2Fnew.txt",
+    "javaSignature": "btepIgbRfF8R4Qnqywtt6jm2WFs="
+  },
+  {
+    "group": "object",
+    "javaMethod": "restoreObject",
+    "input": {
+      "method": "PUT",
+      "bucket": "bkt",
+      "object": "dir/obj.txt",
+      "query": {
+        "restore": ""
+      },
+      "headers": {
+        "content-type": "application/json; charset=UTF-8"
+      }
+    },
+    "presignable": false,
+    "javaPath": "/bkt/dir/obj.txt?restore=",
+    "javaSignature": "JrUzYrqWYBPrXr+hp6iE+sNHLLQ="
+  },
+  {
+    "group": "object",
+    "javaMethod": "restoreArchivedObject",
+    "input": {
+      "method": "PUT",
+      "bucket": "bkt",
+      "object": "dir/obj.txt",
+      "query": {
+        "restoreArchive": "true"
+      },
+      "headers": {
+        "content-type": "application/json; charset=UTF-8"
+      }
+    },
+    "presignable": false,
+    "javaPath": "/bkt/dir/obj.txt?restoreArchive=true",
+    "javaSignature": "JrUzYrqWYBPrXr+hp6iE+sNHLLQ="
+  },
+  {
+    "group": "object",
+    "javaMethod": "prefetchObject",
+    "input": {
+      "method": "PUT",
+      "bucket": "bkt",
+      "object": "dir/obj.txt",
+      "query": {
+        "prefetch": ""
+      },
+      "headers": {
+        "content-type": "application/json; charset=UTF-8"
+      }
+    },
+    "presignable": false,
+    "javaPath": "/bkt/dir/obj.txt?prefetch=",
+    "javaSignature": "JrUzYrqWYBPrXr+hp6iE+sNHLLQ="
+  },
+  {
+    "group": "object",
+    "javaMethod": "refreshObject",
+    "input": {
+      "method": "PUT",
+      "bucket": "bkt",
+      "object": "dir/obj.txt",
+      "query": {
+        "refresh": ""
+      },
+      "headers": {
+        "content-type": "application/json; charset=UTF-8"
+      }
+    },
+    "presignable": false,
+    "javaPath": "/bkt/dir/obj.txt?refresh=",
+    "javaSignature": "JrUzYrqWYBPrXr+hp6iE+sNHLLQ="
+  },
+  {
+    "group": "object",
+    "javaMethod": "getThumbnail",
+    "input": {
+      "method": "GET",
+      "bucket": "bkt",
+      "object": "dir/obj.txt",
+      "query": {
+        "thumb": 1,
+        "w": 100,
+        "h": 80
+      }
+    },
+    "presignable": false,
+    "javaPath": "/bkt/dir/obj.txt?thumb=1&w=100&h=80",
+    "javaSignature": "YRyn2p9ey2XtVTNEhUvpSaV8fVU="
+  },
+  {
+    "group": "object",
+    "javaMethod": "cropImage",
+    "input": {
+      "method": "PUT",
+      "bucket": "bkt",
+      "object": "dir/obj.txt",
+      "query": {
+        "w": 100,
+        "x": 0,
+        "h": 80,
+        "y": 0,
+        "cropImage": ""
+      },
+      "headers": {
+        "content-type": "application/octet-stream"
+      }
+    },
+    "presignable": false,
+    "javaPath": "/bkt/dir/obj.txt?w=100&x=0&h=80&y=0&cropImage=",
+    "javaSignature": "btepIgbRfF8R4Qnqywtt6jm2WFs="
+  },
+  {
+    "group": "object",
+    "javaMethod": "getThirdPartyObject",
+    "input": {
+      "method": "GET",
+      "bucket": "bkt",
+      "object": "dir/obj.txt",
+      "query": {
+        "thirdPartyObject": ""
+      }
+    },
+    "presignable": false,
+    "javaPath": "/bkt/dir/obj.txt?thirdPartyObject=",
+    "javaSignature": "YRyn2p9ey2XtVTNEhUvpSaV8fVU="
+  },
+  {
+    "group": "multipart",
+    "javaMethod": "initMultipartUpload",
+    "input": {
+      "method": "PUT",
+      "bucket": "bkt",
+      "object": "dir/obj.txt",
+      "subResources": [
+        "uploads"
+      ],
+      "headers": {
+        "content-type": "application/json; charset=UTF-8"
+      }
+    },
+    "presignable": true,
+    "javaPath": "/bkt/dir/obj.txt?uploads",
+    "javaSignature": "H5GRAVRXFW/6NOi4CtqrnBxN+Ns=",
+    "javaPresignedSignature": "M6x+NIACQogJSDJQoP/0Iox/FVI="
+  },
+  {
+    "group": "multipart",
+    "javaMethod": "uploadPart",
+    "input": {
+      "method": "PUT",
+      "bucket": "bkt",
+      "object": "dir/obj.txt",
+      "subResources": {
+        "uploadId": "UPID",
+        "partNumber": 3
+      },
+      "headers": {
+        "content-type": "application/octet-stream"
+      }
+    },
+    "presignable": true,
+    "javaPath": "/bkt/dir/obj.txt?uploadId=UPID&partNumber=3",
+    "javaSignature": "Bi7IBZ0+EnyGWazzhnQ4wczQf2U=",
+    "javaPresignedSignature": "j8dCO5tcdjz812nSpoSJIp/8kEE="
+  },
+  {
+    "group": "multipart",
+    "javaMethod": "completeMultipartUpload",
+    "input": {
+      "method": "PUT",
+      "bucket": "bkt",
+      "object": "dir/obj.txt",
+      "subResources": {
+        "uploadId": "UPID"
+      },
+      "headers": {
+        "content-type": "application/octet-stream"
+      }
+    },
+    "presignable": true,
+    "javaPath": "/bkt/dir/obj.txt?uploadId=UPID",
+    "javaSignature": "xIzM/L/+xc2m4ikSAZwsI9IcCA8=",
+    "javaPresignedSignature": "7YSLi31ogY9O6+y5hWfF7yAThOI="
+  },
+  {
+    "group": "multipart",
+    "javaMethod": "abortMultipartUpload",
+    "input": {
+      "method": "DELETE",
+      "bucket": "bkt",
+      "object": "dir/obj.txt",
+      "subResources": {
+        "uploadId": "UPID"
+      },
+      "headers": {
+        "content-type": "application/json; charset=UTF-8"
+      }
+    },
+    "presignable": true,
+    "javaPath": "/bkt/dir/obj.txt?uploadId=UPID",
+    "javaSignature": "0mPxm6bKNSwKspeyb5Q+EDbVBcw=",
+    "javaPresignedSignature": "w2O/MTsVCBEvkKOcWmic+X+yB9Q="
+  }
+]

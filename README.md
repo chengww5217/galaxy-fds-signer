@@ -111,12 +111,18 @@ import { signRequest, presign } from 'galaxy-fds-signer';
 await presign(options, { bucket, object });
 ```
 
+## Documentation
+
+- [API reference](./docs/api.md): every option, input field, return value and error
+- [Operations](./docs/operations.md): all 57 FDS operations (buckets, objects, ACL, multipart, lifecycle, CORS, …) and the `signRequest` input for each
+- [Pre-signed URLs](./docs/presign.md): what is signed, the 20 pre-signable operations, and browser multipart upload
+
 ## API
 
 | Export | Description |
 | --- | --- |
 | `createSigner(options)` | Returns `{ accessId, signRequest, presign }`. The secret is held in a closure and never exposed. Configuration errors throw synchronously. |
-| `signRequest(options, input)` / `presign(options, input)` | One-shot forms of the methods above. |
+| `signRequest(options, input)` / `presign(options, input)` | One-shot forms of the methods above. Configuration errors reject the promise. |
 | `HttpMethod`, `SignAlgorithm`, `SubResource`, `XiaomiHeader` | Constant maps with literal union types. |
 | `GalaxyFDSSignerError` | The only error type thrown or rejected. The underlying error, if any, is in `cause`. |
 
@@ -149,7 +155,9 @@ npm test            # includes Vercel Edge (edge-runtime) and Cloudflare (worker
 npm run build
 ```
 
-The expected values in `test/golden.test.ts` and `test/api.test.ts` were produced by the official `galaxy-fds-sdk-java` (3.0.37, and 3.0.48 for the original cases). They are hard-coded in the tests. If you change signing behavior, regenerate the affected values from the Java SDK.
+The tables in `docs/operations.md` and `docs/presign.md` are generated from `test/fixtures/operations.json` by `npm run docs`. `test/docs.test.ts` fails if they are out of date.
+
+The expected values in `test/golden.test.ts`, `test/api.test.ts` and `test/fixtures/operations.json` were produced by the official `galaxy-fds-sdk-java` (3.0.37, and 3.0.48 for the original cases). They are hard-coded in the tests. If you change signing behavior, regenerate the affected values from the Java SDK.
 
 ## License
 

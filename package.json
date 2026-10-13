@@ -29,6 +29,7 @@
     "typecheck": "tsc --noEmit && tsc -p tsconfig.web.json",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
+    "docs": "node scripts/generate-docs.mjs",
     "format": "prettier --write \"src/**/*.ts\" \"test/**/*.ts\"",
     "prepublishOnly": "npm run typecheck && npm run lint && npm test && npm run build"
   },

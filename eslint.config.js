@@ -9,6 +9,13 @@ export default [
   },
   js.configs.recommended,
   {
+    // Node.js build scripts.
+    files: ['scripts/**/*.mjs'],
+    languageOptions: {
+      globals: { URL: 'readonly', process: 'readonly', console: 'readonly' },
+    },
+  },
+  {
     files: ['**/*.ts'],
     languageOptions: {
       parser: tsparser,
