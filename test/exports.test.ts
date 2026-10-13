@@ -15,9 +15,7 @@ describe('public exports', () => {
         'Signer',
         'SubResource',
         'XiaomiHeader',
-        'calcMD5',
         'constructStringToSign',
-        'getGMTDatetime',
         'urlEncode',
       ].sort(),
     );

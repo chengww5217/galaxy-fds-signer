@@ -1,5 +1,3 @@
-import { createHash } from 'node:crypto';
-
 /**
  * Utility helpers ported from
  * `com.xiaomi.infra.galaxy.fds.auth.signature.Utils` and the URL-encoding
@@ -97,17 +95,6 @@ export function parseUriParameters(query?: string): Array<[string, string]> {
   return params;
 }
 
-/**
- * Formats a date as an RFC 822 GMT string, e.g. `Sun, 06 Nov 1994 08:49:37 GMT`.
- *
- * `Date.prototype.toUTCString()` produces exactly the format used by the Java
- * SDK's `SimpleDateFormat("EEE, dd MMM yyyy HH:mm:ss z", Locale.US)` with a GMT
- * time zone.
- */
-export function getGMTDatetime(date: Date): string {
-  return date.toUTCString();
-}
-
 const URL_ENCODE_SAFE = /[A-Za-z0-9.\-*_]/;
 
 /**
@@ -162,16 +149,4 @@ export function encodeUriPath(path: string): string {
     }
   }
   return result;
-}
-
-/**
- * Computes the MD5 of a UTF-8 string and returns it as a hex string.
- *
- * Reproduces `Utils.calcMD5`, which uses `new BigInteger(1, md5Bytes).toString(16)`
- * and therefore drops leading zero nibbles from the hex output.
- */
-export function calcMD5(s: string): string {
-  const digestHex = createHash('md5').update(s, 'utf-8').digest('hex');
-  const trimmed = digestHex.replace(/^0+/, '');
-  return trimmed.length === 0 ? '0' : trimmed;
 }

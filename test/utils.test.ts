@@ -1,20 +1,9 @@
 import { describe, expect, it } from 'vitest';
 
-import { calcMD5, getGMTDatetime, urlEncode } from '../src/index.js';
+import { urlEncode } from '../src/index.js';
 import { encodeUriPath, parseUri, parseUriParameters } from '../src/auth/utils.js';
 
 // Expected values captured from galaxy-fds-sdk-java 3.0.48.
-const MD5_CASES: Array<{ input: string; expected: string }> = [
-  { input: '', expected: 'd41d8cd98f00b204e9800998ecf8427e' },
-  { input: 'hello', expected: '5d41402abc4b2a76b9719d911017c592' },
-  {
-    input: 'The quick brown fox jumps over the lazy dog',
-    expected: '9e107d9d372bb6826bd81d3542a419d6',
-  },
-  { input: '中文字符串', expected: '353c198568f0cd08eb215d21f45938a3' },
-  { input: 'a/b/c?x=1&y=2', expected: '643f6fdd7fec4c992c55040ed4d681c7' },
-];
-
 const URL_ENCODE_CASES: Array<{ input: string; expected: string }> = [
   { input: '', expected: '' },
   { input: 'simple', expected: 'simple' },
@@ -24,14 +13,6 @@ const URL_ENCODE_CASES: Array<{ input: string; expected: string }> = [
   { input: '中文', expected: '%E4%B8%AD%E6%96%87' },
   { input: 'a.b-c_d', expected: 'a.b-c_d' },
 ];
-
-describe('calcMD5 — golden parity', () => {
-  for (const c of MD5_CASES) {
-    it(`md5(${JSON.stringify(c.input)})`, () => {
-      expect(calcMD5(c.input)).toBe(c.expected);
-    });
-  }
-});
 
 describe('urlEncode — golden parity', () => {
   for (const c of URL_ENCODE_CASES) {
@@ -94,13 +75,6 @@ describe('parseUri', () => {
 
   it('does not throw on malformed percent sequences', () => {
     expect(parseUri('http://host/b/100%?x=%zz').path).toBe('/b/100%');
-  });
-});
-
-describe('getGMTDatetime', () => {
-  it('formats a date as an RFC 822 GMT string', () => {
-    const d = new Date(Date.UTC(1994, 10, 6, 8, 49, 37));
-    expect(getGMTDatetime(d)).toBe('Sun, 06 Nov 1994 08:49:37 GMT');
   });
 });
 
