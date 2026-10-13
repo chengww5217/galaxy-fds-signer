@@ -26,6 +26,27 @@ See [`PresignInput`](./api.md#presigninput) for all options.
 
 When `fetch` runs in a browser on another origin, the bucket must allow that origin through CORS. Configure it with `updateBucketCORSConfiguration` (see [Operations](./operations.md)). Without CORS, the browser blocks the request, even though the signature is valid.
 
+## Edge function example (Cloudflare Workers / Vercel Edge)
+
+```ts
+import { createSigner } from 'galaxy-fds-signer';
+
+export default {
+  async fetch(request: Request, env: Env) {
+    const signer = createSigner({
+      accessId: env.FDS_ACCESS_ID,
+      accessSecret: env.FDS_ACCESS_SECRET,
+      endpoint: 'cnbj1.fds.api.xiaomi.com',
+    });
+    const { name } = await request.json<{ name: string }>();
+    // Authorize the caller and validate `name` here.
+    return Response.json(await signer.presign({ method: 'PUT', bucket: 'uploads', object: name }));
+  },
+};
+```
+
+The response is plain JSON, so the browser can pass it straight to `fetch`. This endpoint has no authentication of its own. Anyone who can call it can upload, so check who the caller is before signing.
+
 ## What the signature covers
 
 | Part | Signed | Consequence |

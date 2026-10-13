@@ -18,6 +18,7 @@ Every function is asynchronous except `createSigner`, because Web Crypto is. Eve
 - [Sub-resources](#sub-resources)
 - [Constants](#constants)
 - [Errors](#errors)
+- [How signing works](#how-signing-works)
 
 ## `createSigner(options)`
 
@@ -218,3 +219,14 @@ Every failure is a `GalaxyFDSSignerError`, a subclass of `Error`. `createSigner`
 | An invalid `date`, or an invalid `url` | `signRequest` |
 | Missing `bucket` | `presign` |
 | An expiration that is not an integer, is in seconds instead of milliseconds, or is in the past; `expiresIn <= 0` | `presign` |
+
+## How signing works
+
+The Galaxy-V2 signature is an HMAC over:
+
+```
+{METHOD}\n{content-md5}\n{content-type}\n{date, or Expires for pre-signed URLs}\n
+{sorted x-xiaomi-* headers as name:value\n}{decoded path}{?sorted sub-resources}
+```
+
+Only the [sub-resources](#sub-resources) are part of the signature; other query parameters are not. When `x-xiaomi-date` is present, the `date` line is left empty. The path and query are percent-decoded the same way `java.net.URI` decodes them.
