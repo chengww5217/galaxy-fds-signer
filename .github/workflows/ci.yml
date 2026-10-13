@@ -53,3 +53,8 @@ jobs:
       # every TypeScript resolution mode).
       - name: Build
         run: npm run build
+
+      # Installs the packed tarball into a scratch project and loads it via
+      # `import` and `require(esm)`, i.e. exactly what consumers get.
+      - name: Smoke-test the packed tarball
+        run: npm run smoke:pack

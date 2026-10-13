@@ -6,14 +6,15 @@
  * Publishing is deliberately not done here: `.github/workflows/release.yml`
  * runs on `release: published` and performs the verified `npm publish`.
  *
- * Usage: npm run release -- [patch|minor|major|current|<version>]
+ * Usage: npm run release -- <patch|minor|major|current|<version>>
  *
  *   patch|minor|major  bump the version in package.json
  *   <version>          set an explicit version, e.g. 1.0.0
  *   current            no bump: tag the version already in package.json, for
  *                      the very first release
  *
- * Requires a clean working tree on main and an authenticated `gh` CLI.
+ * Runs `npm ci` and `npm run verify` before tagging. Requires a clean working
+ * tree on main and an authenticated `gh` CLI.
  */
 import { execFileSync } from 'node:child_process';
 import { readFileSync } from 'node:fs';
@@ -31,9 +32,11 @@ const currentVersion = () =>
 const BUMPS = ['patch', 'minor', 'major'];
 const SEMVER = /^\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?$/;
 
-const mode = process.argv[2] ?? 'patch';
-if (mode !== 'current' && !BUMPS.includes(mode) && !SEMVER.test(mode)) {
-  console.error(`usage: npm run release -- [${BUMPS.join('|')}|current|<version>]`);
+// No default: picking the bump is a decision (a breaking change on 0.x is a
+// minor bump, for instance), not something to fall into by omission.
+const mode = process.argv[2];
+if (mode !== 'current' && !BUMPS.includes(mode) && !SEMVER.test(mode ?? '')) {
+  console.error(`usage: npm run release -- <${BUMPS.join('|')}|current|<version>>`);
   process.exit(1);
 }
 
@@ -47,6 +50,11 @@ if (output('git', ['rev-parse', '--abbrev-ref', 'HEAD']) !== 'main') {
 }
 
 run('git', ['pull', '--ff-only']);
+
+// Verify before anything is tagged: release.yml would refuse to publish a
+// failing build, but only after the tag and the GitHub Release are public.
+run('npm', ['ci']);
+run('npm', ['run', 'verify']);
 
 if (mode === 'current') {
   // First release: publish exactly what package.json already declares.

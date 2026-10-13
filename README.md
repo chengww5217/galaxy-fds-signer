@@ -53,7 +53,8 @@ npm run typecheck   # also checks src against Web APIs only (tsconfig.web.json)
 npm run lint        # ESLint + Prettier --check
 npm run fix         # the same two, with their fixes applied
 npm test            # includes Vercel Edge (edge-runtime) and Cloudflare (workerd) runs
-npm run build
+npm run build       # tsdown: dist/index.js + index.d.ts, then publint and attw
+npm run verify      # all of the above, plus installing and loading the packed tarball
 npm run docs        # regenerates the tables in docs/ from test/fixtures/operations.json
 ```
 

@@ -36,6 +36,10 @@ jobs:
 
       - run: npm ci
 
+      # Checks the registry signatures (and provenance attestations, where
+      # present) of every installed dependency before the build uses them.
+      - run: npm audit signatures
+
       # A package's first version cannot be published via OIDC: npm needs the
       # package to exist before a trusted publisher can be configured
       # (npm/cli#8544), so 0.1.0 was published manually. Skipping it here keeps
@@ -51,8 +55,9 @@ jobs:
             echo "skip=true" >> "$GITHUB_OUTPUT"
           fi
 
-      # `prepublishOnly` runs typecheck, lint, tests, build and
-      # publint/attw, so nothing reaches the registry unverified.
+      # `prepublishOnly` runs `npm run verify` (typecheck, lint, tests, build
+      # with publint/attw, tarball smoke test), so nothing reaches the
+      # registry unverified.
       #
       # Authentication uses npm trusted publishing (OIDC), so no long-lived
       # NPM_TOKEN secret is stored. Configure it once on npmjs.com:
