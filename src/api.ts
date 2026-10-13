@@ -22,7 +22,7 @@ import {
   type SubResources,
   toExpiresMillis,
 } from './auth/signer.js';
-import { encodeUriPath, urlEncode } from './auth/utils.js';
+import { encodeUriPath, isWellFormed, urlEncode } from './auth/utils.js';
 
 /** Configuration shared by every request signed with {@link createSigner}. */
 export interface SignerOptions extends FDSEndpointOptions {
@@ -199,10 +199,12 @@ export function createSigner(options: SignerOptions): FdsSigner {
     } else {
       validateBucket(bucket);
     }
-    if (typeof object !== 'string') {
-      throw new GalaxyFDSSignerError('INVALID_OBJECT', 'object must be a string', {
-        field: 'object',
-      });
+    if (typeof object !== 'string' || !isWellFormed(object)) {
+      throw new GalaxyFDSSignerError(
+        'INVALID_OBJECT',
+        'object must be a string of well-formed UTF-16 (no unpaired surrogates)',
+        { field: 'object' },
+      );
     }
     const query = [...formatSubResources(target.subResources), ...extraQuery];
     const base = cdn ? config.getCdnBaseUri() : config.getBaseUri();
@@ -385,6 +387,11 @@ function validateBucket(
       field: 'bucket',
     });
   }
+  if (!isWellFormed(bucket as string)) {
+    throw new GalaxyFDSSignerError(code, 'bucket must not contain unpaired surrogates', {
+      field: 'bucket',
+    });
+  }
 }
 
 function assertDnsLabel(bucket: string, code: GalaxyFDSSignerErrorCode): void {
@@ -436,6 +443,13 @@ function toQueryParams(query: unknown): string[] {
         'INVALID_QUERY',
         `invalid value for query parameter ${JSON.stringify(key)}: ` +
           'expected a string or number',
+        { field: 'query' },
+      );
+    }
+    if (!isWellFormed(key) || (typeof value === 'string' && !isWellFormed(value))) {
+      throw new GalaxyFDSSignerError(
+        'INVALID_QUERY',
+        `query parameter ${JSON.stringify(key)} contains an unpaired surrogate`,
         { field: 'query' },
       );
     }

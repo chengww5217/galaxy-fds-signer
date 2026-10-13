@@ -1,6 +1,12 @@
 import { describe, expect, it } from 'vitest';
 
-import { encodeUriPath, parseUri, parseUriParameters, urlEncode } from '../src/auth/utils.js';
+import {
+  encodeUriPath,
+  isWellFormed,
+  parseUri,
+  parseUriParameters,
+  urlEncode,
+} from '../src/auth/utils.js';
 
 // Expected values captured from galaxy-fds-sdk-java 3.0.48.
 const URL_ENCODE_CASES: Array<{ input: string; expected: string }> = [
@@ -23,6 +29,16 @@ describe('urlEncode — golden parity', () => {
   it('returns empty string for undefined', () => {
     expect(urlEncode(undefined)).toBe('');
     expect(urlEncode()).toBe('');
+  });
+});
+
+describe('isWellFormed', () => {
+  it.each(['', 'abc', '中文', '😀', '\ud83d\ude00x'])('accepts %j', (s) => {
+    expect(isWellFormed(s)).toBe(true);
+  });
+
+  it.each(['\ud800', 'a\udc00', '\ude00\ud83d', 'x\ud83dy'])('rejects %j', (s) => {
+    expect(isWellFormed(s)).toBe(false);
   });
 });
 

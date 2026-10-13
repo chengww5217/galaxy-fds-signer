@@ -237,11 +237,11 @@ class GalaxyFDSSignerError extends Error {
 | `INVALID_INPUT` | input | `input`, `cdn` | The input object is missing or not an object, or `cdn` is not a boolean |
 | `INVALID_HEADERS` | input | `headers` | A repeated header name, a non-string or non-token name, a value with NUL / CR / LF / characters above U+00FF, or headers in an unsupported shape |
 | `MISSING_DATE` | input | `headers` | Neither `date` nor `x-xiaomi-date` (internal signing only; `signRequest` always adds one) |
-| `INVALID_BUCKET` | input | `bucket` | A missing `bucket` for `presign`, or for `object` / `subResources`; a bucket containing `/`; a bucket that is not a DNS label on a `*.mi-fds.com` endpoint |
-| `INVALID_OBJECT` | input | `object` | `object` is not a string |
-| `INVALID_SUB_RESOURCE` | input | `subResources` | A sub-resource name not in the list above, or a value that is not a string, number or boolean |
-| `INVALID_QUERY` | input | `query` | `query` is not an object, a value is not a string or number, or a name is reserved (a sub-resource, `Expires`, `GalaxyAccessKeyId` or `Signature`, in any case) |
-| `INVALID_URL` | input | `url` | An empty, relative or malformed `url`, or `url` combined with `bucket` / `object` / `subResources` / `cdn` / `query` |
+| `INVALID_BUCKET` | input | `bucket` | A missing `bucket` for `presign`, or for `object` / `subResources`; a bucket containing `/` or an unpaired surrogate; a bucket that is not a DNS label on a `*.mi-fds.com` endpoint |
+| `INVALID_OBJECT` | input | `object` | `object` is not a string, or contains an unpaired surrogate |
+| `INVALID_SUB_RESOURCE` | input | `subResources` | A sub-resource name not in the list above, or a value that is not a string, number or boolean, or contains an unpaired surrogate |
+| `INVALID_QUERY` | input | `query` | `query` is not an object, a value is not a string or number, a name is reserved (a sub-resource, `Expires`, `GalaxyAccessKeyId` or `Signature`, in any case), or a name or value contains an unpaired surrogate |
+| `INVALID_URL` | input | `url` | An empty, relative or malformed `url` (including one with an unpaired surrogate), or `url` combined with `bucket` / `object` / `subResources` / `cdn` / `query` |
 | `INVALID_DATE` | input | `date` | `date` is not a valid `Date` |
 | `INVALID_EXPIRATION` | input | `expires`, `expiresIn` | An expiration that is not an integer, is in seconds instead of milliseconds, or is in the past; an `expiresIn` that is not positive, or so large the expiration overflows |
 | `CRYPTO_UNAVAILABLE` | runtime | | `globalThis.crypto.subtle` is missing |

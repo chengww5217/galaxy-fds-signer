@@ -33,6 +33,18 @@ export function tryParseUrl(s: string): URL | null {
   }
 }
 
+// An unpaired UTF-16 surrogate (`String.prototype.isWellFormed` is ES2024).
+const LONE_SURROGATE = /[\ud800-\udbff](?![\udc00-\udfff])|(?<![\ud800-\udbff])[\udc00-\udfff]/;
+
+/**
+ * Whether `s` is well-formed UTF-16, i.e. has a UTF-8 encoding. `TextEncoder`
+ * replaces a lone surrogate with U+FFFD while Java's encoder emits `?`, so such
+ * a string would sign differently from the Java SDK (and from the server).
+ */
+export function isWellFormed(s: string): boolean {
+  return !LONE_SURROGATE.test(s);
+}
+
 /**
  * Parses a URI string into the components used while signing.
  *
@@ -42,7 +54,7 @@ export function tryParseUrl(s: string): URL | null {
  * U+FFFD.
  */
 export function parseUri(uri: string): UriParts {
-  const raw = typeof uri === 'string' ? RAW_URI.exec(uri) : null;
+  const raw = typeof uri === 'string' && isWellFormed(uri) ? RAW_URI.exec(uri) : null;
   const url = raw === null ? null : tryParseUrl(uri);
   if (raw === null || url === null) {
     throw new GalaxyFDSSignerError('INVALID_URL', `invalid URI: ${String(uri)}`, { field: 'url' });

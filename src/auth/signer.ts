@@ -10,7 +10,7 @@ import {
 } from '../enums.js';
 import { GalaxyFDSSignerError, requireString, wrapErrors, wrapErrorsAsync } from '../errors.js';
 import { hmac, toBase64 } from './crypto.js';
-import { encodeUriPath, parseUri, parseUriParameters, urlEncode } from './utils.js';
+import { encodeUriPath, isWellFormed, parseUri, parseUriParameters, urlEncode } from './utils.js';
 
 /**
  * Headers participating in a signature. Accepts a plain object (values may be
@@ -187,6 +187,13 @@ export function formatSubResources(subResources: SubResources | undefined): stri
     if (value === true) {
       parts.push(name);
     } else if (typeof value === 'string' || typeof value === 'number') {
+      if (typeof value === 'string' && !isWellFormed(value)) {
+        throw new GalaxyFDSSignerError(
+          'INVALID_SUB_RESOURCE',
+          `invalid value for sub-resource ${name}: contains an unpaired surrogate`,
+          { field: 'subResources' },
+        );
+      }
       parts.push(`${name}=${urlEncode(String(value))}`);
     } else {
       throw new GalaxyFDSSignerError(

@@ -143,6 +143,11 @@ describe('signRequest', () => {
     expect(padded).toEqual(clean);
   });
 
+  it('signs well-formed astral characters (surrogate pairs)', async () => {
+    const req = await signer.signRequest({ bucket: 'b', object: '😀.png', date: DATE });
+    expect(req.url).toBe('https://cnbj1.fds.api.xiaomi.com/b/%F0%9F%98%80.png');
+  });
+
   it('is deterministic for the same input', async () => {
     const input = { method: 'DELETE', bucket: 'b', object: 'o', date: DATE } as const;
     expect(await signer.signRequest(input)).toEqual(await signer.signRequest(input));
@@ -213,6 +218,9 @@ describe('signRequest', () => {
     ['a sub-resource passed as query', { bucket: 'b', query: { uploadId: 'x' } }],
     ['Expires passed as query', { bucket: 'b', query: { Expires: '9999999999999' } }],
     ['Signature passed as query (any case)', { bucket: 'b', query: { signature: 'x' } }],
+    ['a query value with a lone surrogate', { bucket: 'b', query: { prefix: 'a\udfff' } }],
+    ['a query name with a lone surrogate', { bucket: 'b', query: { ['\ud800']: '1' } }],
+    ['a url with a lone surrogate', { url: 'https://h/b/\ud800' }],
     ['no input', undefined],
   ])('rejects %s', async (_name, input) => {
     await expect(signer.signRequest(input as never)).rejects.toThrow(GalaxyFDSSignerError);
@@ -282,6 +290,12 @@ describe('presign', () => {
     ['a non-positive expiresIn', { bucket: 'b', expiresIn: 0 }],
     ['a NaN expiresIn', { bucket: 'b', expiresIn: NaN }],
     ['a non-boolean cdn', { bucket: 'b', cdn: 1 }],
+    ['an object with a lone surrogate', { bucket: 'b', object: 'a\ud800' }],
+    ['a bucket with a lone surrogate', { bucket: '\udc00b' }],
+    [
+      'a sub-resource value with a lone surrogate',
+      { bucket: 'b', subResources: { uploadId: '\ud83d' } },
+    ],
     ['an Infinity expiresIn', { bucket: 'b', expiresIn: Infinity }],
     ['no input', undefined],
   ])('rejects %s', async (_name, input) => {
