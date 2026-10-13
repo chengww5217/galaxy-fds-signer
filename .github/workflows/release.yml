@@ -23,7 +23,30 @@ jobs:
           cache: npm
           registry-url: https://registry.npmjs.org
 
+      # Guards against publishing a version that disagrees with the release
+      # tag: npm versions cannot be overwritten once published.
+      - name: Verify tag matches package.json
+        env:
+          TAG: ${{ github.event.release.tag_name }}
+        run: |
+          test "v$(node -p "require('./package.json').version")" = "$TAG"
+
       - run: npm ci
+
+      # A package's first version cannot be published via OIDC: npm needs the
+      # package to exist before a trusted publisher can be configured
+      # (npm/cli#8544), so 0.1.0 was published manually. Skipping it here keeps
+      # that one release idempotent. Because the tag encodes the version, the
+      # check above means "already on the registry" can only be this version.
+      - name: Check published version
+        id: version
+        run: |
+          name=$(node -p "require('./package.json').name")
+          version=$(node -p "require('./package.json').version")
+          if npm view "${name}@${version}" version > /dev/null 2>&1; then
+            echo "${name}@${version} is already published, skipping"
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+          fi
 
       # `prepublishOnly` runs typecheck, lint, tests, build and
       # publint/attw, so nothing reaches the registry unverified.
@@ -35,4 +58,5 @@ jobs:
       #                         → workflow `release.yml`
       # With a public repository, npm enables provenance automatically.
       - name: Publish
+        if: steps.version.outputs.skip != 'true'
         run: npm publish
