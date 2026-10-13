@@ -1,4 +1,4 @@
-import { GalaxyFDSClientException } from './errors.js';
+import { GalaxyFDSSignerError } from './errors.js';
 
 /**
  * Galaxy FDS access credential.
@@ -26,7 +26,7 @@ export interface CredentialObject {
   accessSecret: string;
 }
 
-/** Any credential shape accepted by {@link GalaxyFDSClient}. */
+/** Any credential shape accepted by {@link GalaxyFDSSigner}. */
 export type CredentialInput = GalaxyFDSCredential | CredentialObject;
 
 /**
@@ -58,7 +58,7 @@ export class BasicFDSCredential implements GalaxyFDSCredential {
  * accepting either the getter-based interface or a plain
  * `{ accessId, accessSecret }` object.
  *
- * @throws GalaxyFDSClientException when the input has neither shape.
+ * @throws GalaxyFDSSignerError when the input has neither shape.
  */
 export function toGalaxyFDSCredential(input: CredentialInput): GalaxyFDSCredential {
   const credential = input as GalaxyFDSCredential;
@@ -70,7 +70,7 @@ export function toGalaxyFDSCredential(input: CredentialInput): GalaxyFDSCredenti
   }
   const { accessId, accessSecret } = input as CredentialObject;
   if (typeof accessId !== 'string' || typeof accessSecret !== 'string') {
-    throw new GalaxyFDSClientException(
+    throw new GalaxyFDSSignerError(
       'credential must implement GalaxyFDSCredential or be { accessId, accessSecret }',
     );
   }

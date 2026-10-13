@@ -37,11 +37,11 @@ npm install galaxy-fds-signer
 ### Generate an `Authorization` header
 
 ```ts
-import { GalaxyFDSClient, HttpMethod } from 'galaxy-fds-signer';
+import { GalaxyFDSSigner, HttpMethod } from 'galaxy-fds-signer';
 
 // A plain { accessId, accessSecret } object works, as does any
 // GalaxyFDSCredential implementation such as BasicFDSCredential.
-const client = new GalaxyFDSClient({
+const client = new GalaxyFDSSigner({
   accessId: 'your-access-id',
   accessSecret: 'your-access-secret',
 });
@@ -59,9 +59,9 @@ const authorization = client.getAuthorizationHeader(HttpMethod.GET, uri, headers
 ### Generate a pre-signed URI
 
 ```ts
-import { GalaxyFDSClient, SubResource } from 'galaxy-fds-signer';
+import { GalaxyFDSSigner, SubResource } from 'galaxy-fds-signer';
 
-const client = new GalaxyFDSClient({
+const client = new GalaxyFDSSigner({
   accessId: 'your-access-id',
   accessSecret: 'your-access-secret',
 });
@@ -89,7 +89,7 @@ const cdnUri = client.generatePresignedCdnUri('my-bucket', 'my-object', expirati
 ### Custom endpoints
 
 ```ts
-const client = new GalaxyFDSClient(credential, {
+const client = new GalaxyFDSSigner(credential, {
   baseUri: 'https://my-bucket.mi-fds.com/',
   cdnBaseUri: 'http://cdn.fds.api.xiaomi.com/',
   // signAlgorithm: SignAlgorithm.HmacSHA256,
@@ -119,12 +119,12 @@ const signature = Signer.signToBase64(
 
 | Export | Description |
 | --- | --- |
-| `GalaxyFDSClient` | High-level client for auth headers and pre-signed URIs |
+| `GalaxyFDSSigner` | High-level client for auth headers and pre-signed URIs |
 | `BasicFDSCredential` | Static access-id / access-secret credential (a plain `{ accessId, accessSecret }` object works too) |
 | `PresignOptions` | Options-object form for the pre-signing methods |
 | `Signer` | Low-level signing primitives (`sign`, `signToBase64`, `getAuthorizationHeader`, `generatePresignedUri`) |
 | `HttpMethod`, `SignAlgorithm`, `SubResource`, `XiaomiHeader` | Constant maps with literal union types, ported from the Java SDK enums |
-| `GalaxyFDSClientException` | Error type thrown by the library |
+| `GalaxyFDSSignerError` | Error type thrown by the library |
 | `calcMD5`, `urlEncode`, `getGMTDatetime`, `parseUri`, `parseUriParameters` | Signing utilities |
 
 ## How signing works

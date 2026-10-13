@@ -1,16 +1,12 @@
 /**
- * Error thrown by the Galaxy FDS signer.
- *
- * Ported from `com.xiaomi.infra.galaxy.fds.client.exception.GalaxyFDSClientException`.
- * The optional {@link statusCode} carries an HTTP status when available.
+ * Error thrown by the Galaxy FDS signer for invalid input (bad URI,
+ * credential, expiration, method, ...). The library performs no network I/O,
+ * so there is no HTTP status attached; the underlying error, if any, is
+ * available as {@link Error.cause}.
  */
-export class GalaxyFDSClientException extends Error {
-  /** HTTP status code associated with the error, or `undefined` if not applicable. */
-  readonly statusCode?: number;
-
-  constructor(message?: string, options?: { cause?: unknown; statusCode?: number }) {
+export class GalaxyFDSSignerError extends Error {
+  constructor(message?: string, options?: { cause?: unknown }) {
     super(message, options?.cause !== undefined ? { cause: options.cause } : undefined);
-    this.name = 'GalaxyFDSClientException';
-    this.statusCode = options?.statusCode;
+    this.name = 'GalaxyFDSSignerError';
   }
 }

@@ -2,8 +2,8 @@ import { describe, expect, it } from 'vitest';
 
 import {
   BasicFDSCredential,
-  GalaxyFDSClient,
-  GalaxyFDSClientException,
+  GalaxyFDSSigner,
+  GalaxyFDSSignerError,
   HttpMethod,
   Signer,
 } from '../src/index.js';
@@ -13,7 +13,7 @@ const ACCESS_SECRET = 'wJalrXUtnFEMIK7MDENGbPxRfiCYEXAMPLEKEY';
 const EXPIRES = 4102444800000; // 2100-01-01
 
 function newVirtualClient() {
-  return new GalaxyFDSClient(new BasicFDSCredential(ACCESS_ID, ACCESS_SECRET), {
+  return new GalaxyFDSSigner(new BasicFDSCredential(ACCESS_ID, ACCESS_SECRET), {
     endpoint: 'files.mi-fds.com',
   });
 }
@@ -47,7 +47,7 @@ describe('virtual-hosted-style addressing', () => {
   });
 
   it('does not rewrite non-virtual endpoints', () => {
-    const client = new GalaxyFDSClient(new BasicFDSCredential(ACCESS_ID, ACCESS_SECRET), {
+    const client = new GalaxyFDSSigner(new BasicFDSCredential(ACCESS_ID, ACCESS_SECRET), {
       endpoint: 'files.fds.api.xiaomi.com',
     });
     const uri = client.generatePresignedUri('my-bucket', 'my-object', EXPIRES);
@@ -55,7 +55,7 @@ describe('virtual-hosted-style addressing', () => {
   });
 
   it('does not rewrite when an explicit base URI points elsewhere', () => {
-    const client = new GalaxyFDSClient(new BasicFDSCredential(ACCESS_ID, ACCESS_SECRET), {
+    const client = new GalaxyFDSSigner(new BasicFDSCredential(ACCESS_ID, ACCESS_SECRET), {
       endpoint: 'files.mi-fds.com',
       baseUri: 'https://other.example.com/',
     });
@@ -66,7 +66,7 @@ describe('virtual-hosted-style addressing', () => {
   it('rejects pre-signing a CDN URI without a CDN endpoint', () => {
     const client = newVirtualClient();
     expect(() => client.generatePresignedCdnUri('my-bucket', 'my-object', EXPIRES)).toThrow(
-      GalaxyFDSClientException,
+      GalaxyFDSSignerError,
     );
   });
 });

@@ -14,7 +14,7 @@ export {
   SIGN_ALGORITHM_DIGEST,
   SUB_RESOURCE_SET,
 } from './enums.js';
-export { GalaxyFDSClientException } from './errors.js';
+export { GalaxyFDSSignerError } from './errors.js';
 export {
   type GalaxyFDSCredential,
   type CredentialObject,
@@ -38,5 +38,5 @@ export {
   encodeUriPath,
   calcMD5,
 } from './auth/utils.js';
-export { GalaxyFDSClient, type FDSClientOptions, type PresignOptions } from './client.js';
-export { FDSClientConfiguration, type FDSClientConfigurationOptions } from './config.js';
+export { GalaxyFDSSigner, type GalaxyFDSSignerOptions, type PresignOptions } from './fds-signer.js';
+export { FDSEndpointConfiguration, type FDSEndpointOptions } from './config.js';

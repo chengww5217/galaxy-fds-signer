@@ -1,8 +1,8 @@
 import { Common } from './common.js';
-import { GalaxyFDSClientException } from './errors.js';
+import { GalaxyFDSSignerError } from './errors.js';
 
 /**
- * Endpoint configuration for a {@link GalaxyFDSClient}.
+ * Endpoint configuration for a {@link GalaxyFDSSigner}.
  *
  * Ported from the URI-relevant subset of the Java SDK's
  * `com.xiaomi.infra.galaxy.fds.client.FDSClientConfiguration`. Only the
@@ -10,7 +10,7 @@ import { GalaxyFDSClientException } from './errors.js';
  * network I/O, so timeouts, retries, connection pools and the like are out of
  * scope.
  */
-export interface FDSClientConfigurationOptions {
+export interface FDSEndpointOptions {
   /**
    * Service endpoint host, e.g. `files.fds.api.xiaomi.com` or `files.mi-fds.com`
    * (a port may be appended). The region name and the addressing style are
@@ -46,11 +46,11 @@ const URI_HOST_STYLE_COM_SUFFIX = '.mi-fds.com';
 const URI_CDN_SUFFIX = '.fds.api.mi-img.com';
 
 /**
- * Resolves the base URIs and addressing style used by {@link GalaxyFDSClient}.
+ * Resolves the base URIs and addressing style used by {@link GalaxyFDSSigner}.
  *
- * @see FDSClientConfigurationOptions
+ * @see FDSEndpointOptions
  */
-export class FDSClientConfiguration {
+export class FDSEndpointConfiguration {
   /** The configured service endpoint host, or `undefined` when only a base URI was given. */
   readonly endpoint: string | undefined;
   /** The derived (or supplied) region name, or `undefined` when not derivable. */
@@ -63,7 +63,7 @@ export class FDSClientConfiguration {
   private readonly explicitBaseUri: string | undefined;
   private readonly explicitCdnBaseUri: string | undefined;
 
-  constructor(options: FDSClientConfigurationOptions = {}) {
+  constructor(options: FDSEndpointOptions = {}) {
     let endpoint = options.endpoint;
     if (endpoint === undefined && options.regionName !== undefined) {
       endpoint = options.regionName + URI_COM_SUFFIX;
@@ -74,7 +74,7 @@ export class FDSClientConfiguration {
 
     if (endpoint !== undefined) {
       if (endpoint.length === 0) {
-        throw new GalaxyFDSClientException('endpoint must be a non-empty string');
+        throw new GalaxyFDSSignerError('endpoint must be a non-empty string');
       }
       const host = endpoint.split(':')[0];
       if (host.endsWith(URI_NET_SUFFIX)) {
@@ -84,7 +84,7 @@ export class FDSClientConfiguration {
       } else if (host.endsWith(URI_HOST_STYLE_COM_SUFFIX)) {
         uriSuffix = URI_HOST_STYLE_COM_SUFFIX;
       } else {
-        throw new GalaxyFDSClientException('illegal endpoint: ' + endpoint);
+        throw new GalaxyFDSSignerError('illegal endpoint: ' + endpoint);
       }
       regionName = host.substring(0, host.length - uriSuffix.length);
     }
@@ -140,7 +140,7 @@ export class FDSClientConfiguration {
 
     const host = enableCdn ? this.cdnEndpoint : this.endpoint;
     if (host === undefined || host.length === 0) {
-      throw new GalaxyFDSClientException(
+      throw new GalaxyFDSSignerError(
         'Please use cdnEndpoint (or cdnBaseUri) to set the CDN domain first if you want to use the CDN.',
       );
     }

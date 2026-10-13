@@ -3,8 +3,8 @@ import { describe, expect, it } from 'vitest';
 import {
   BasicFDSCredential,
   Common,
-  GalaxyFDSClient,
-  GalaxyFDSClientException,
+  GalaxyFDSSigner,
+  GalaxyFDSSignerError,
   HttpMethod,
   Signer,
   SubResource,
@@ -15,10 +15,10 @@ const ACCESS_SECRET = 'wJalrXUtnFEMIK7MDENGbPxRfiCYEXAMPLEKEY';
 const FUTURE = 4102444800000; // 2100-01-01
 
 function newClient() {
-  return new GalaxyFDSClient(new BasicFDSCredential(ACCESS_ID, ACCESS_SECRET));
+  return new GalaxyFDSSigner(new BasicFDSCredential(ACCESS_ID, ACCESS_SECRET));
 }
 
-describe('GalaxyFDSClient', () => {
+describe('GalaxyFDSSigner', () => {
   it('builds an authorization header matching the Signer', () => {
     const client = newClient();
     const uri = Common.DEFAULT_FDS_SERVICE_BASE_URI + 'my-bucket/my-object';
@@ -70,7 +70,7 @@ describe('GalaxyFDSClient', () => {
   });
 
   it('honors custom base URIs from options', () => {
-    const client = new GalaxyFDSClient(new BasicFDSCredential(ACCESS_ID, ACCESS_SECRET), {
+    const client = new GalaxyFDSSigner(new BasicFDSCredential(ACCESS_ID, ACCESS_SECRET), {
       baseUri: 'https://my.endpoint.example.com/',
     });
     const uri = client.generatePresignedUri('b', 'o', FUTURE);
@@ -78,7 +78,7 @@ describe('GalaxyFDSClient', () => {
   });
 
   it('accepts a plain { accessId, accessSecret } credential', () => {
-    const plain = new GalaxyFDSClient({ accessId: ACCESS_ID, accessSecret: ACCESS_SECRET });
+    const plain = new GalaxyFDSSigner({ accessId: ACCESS_ID, accessSecret: ACCESS_SECRET });
     const uri = Common.DEFAULT_FDS_SERVICE_BASE_URI + 'my-bucket/my-object';
     const headers = { date: 'Sun, 06 Nov 1994 08:49:37 GMT' };
     expect(plain.getAuthorizationHeader(HttpMethod.GET, uri, headers)).toBe(
@@ -90,8 +90,8 @@ describe('GalaxyFDSClient', () => {
   });
 
   it('rejects a credential with neither credential shape', () => {
-    expect(() => new GalaxyFDSClient({} as never)).toThrow(GalaxyFDSClientException);
-    expect(() => new GalaxyFDSClient({ accessId: ACCESS_ID } as never)).toThrow('credential');
+    expect(() => new GalaxyFDSSigner({} as never)).toThrow(GalaxyFDSSignerError);
+    expect(() => new GalaxyFDSSigner({ accessId: ACCESS_ID } as never)).toThrow('credential');
   });
 
   it('supports an options object equivalent to the positional form', () => {

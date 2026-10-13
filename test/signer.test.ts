@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import { HeaderMultiMap } from '../src/auth/signer.js';
-import { GalaxyFDSClientException, HttpMethod, Signer } from '../src/index.js';
+import { GalaxyFDSSignerError, HttpMethod, Signer } from '../src/index.js';
 
 const ACCESS_ID = 'AKIDEXAMPLEACCESSID';
 const ACCESS_SECRET = 'wJalrXUtnFEMIK7MDENGbPxRfiCYEXAMPLEKEY';
@@ -41,14 +41,14 @@ describe('method and algorithm validation', () => {
 
   it.each(['PATCH', '', 42])('rejects unsupported method %j', (method) => {
     expect(() => Signer.signToBase64(method as HttpMethod, URI, HEADERS, ACCESS_SECRET)).toThrow(
-      GalaxyFDSClientException,
+      GalaxyFDSSignerError,
     );
   });
 
   it.each(['HmacSHA512', 'sha1', 'toString'])('rejects unsupported algorithm %j', (algorithm) => {
     expect(() =>
       Signer.signToBase64(HttpMethod.GET, URI, HEADERS, ACCESS_SECRET, algorithm as never),
-    ).toThrow(GalaxyFDSClientException);
+    ).toThrow(GalaxyFDSSignerError);
   });
 });
 
@@ -84,14 +84,14 @@ describe('generatePresignedUri input validation', () => {
   }
 
   it('rejects an empty bucket name', () => {
-    expect(() => presign(1700000000000, '')).toThrow(GalaxyFDSClientException);
+    expect(() => presign(1700000000000, '')).toThrow(GalaxyFDSSignerError);
     expect(() => presign(1700000000000, '')).toThrow('bucketName');
   });
 
   it.each([NaN, Infinity, -Infinity, new Date('not a date'), 1.5e12 + 0.5, '1700000000000'])(
     'rejects an invalid expiration: %s',
     (expiration) => {
-      expect(() => presign(expiration as number)).toThrow(GalaxyFDSClientException);
+      expect(() => presign(expiration as number)).toThrow(GalaxyFDSSignerError);
       expect(() => presign(expiration as number)).toThrow('expiration');
     },
   );

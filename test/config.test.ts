@@ -3,18 +3,18 @@ import { describe, expect, it } from 'vitest';
 import {
   BasicFDSCredential,
   Common,
-  FDSClientConfiguration,
-  GalaxyFDSClient,
-  GalaxyFDSClientException,
+  FDSEndpointConfiguration,
+  GalaxyFDSSigner,
+  GalaxyFDSSignerError,
 } from '../src/index.js';
 
 const ACCESS_ID = 'AKIDEXAMPLEACCESSID';
 const ACCESS_SECRET = 'wJalrXUtnFEMIK7MDENGbPxRfiCYEXAMPLEKEY';
 const FUTURE = 4102444800000; // 2100-01-01
 
-describe('FDSClientConfiguration defaults', () => {
+describe('FDSEndpointConfiguration defaults', () => {
   it('falls back to the built-in base URIs', () => {
-    const config = new FDSClientConfiguration();
+    const config = new FDSEndpointConfiguration();
     expect(config.endpoint).toBeUndefined();
     expect(config.regionName).toBeUndefined();
     expect(config.shouldUseVirtualAddressing()).toBe(false);
@@ -24,9 +24,9 @@ describe('FDSClientConfiguration defaults', () => {
   });
 });
 
-describe('FDSClientConfiguration endpoint parsing', () => {
+describe('FDSEndpointConfiguration endpoint parsing', () => {
   it('derives region, HTTPS and the CDN endpoint from a public endpoint', () => {
-    const config = new FDSClientConfiguration({ endpoint: 'files.fds.api.xiaomi.com' });
+    const config = new FDSEndpointConfiguration({ endpoint: 'files.fds.api.xiaomi.com' });
     expect(config.endpoint).toBe('files.fds.api.xiaomi.com');
     expect(config.regionName).toBe('files');
     expect(config.isHttpsEnabled()).toBe(true);
@@ -37,13 +37,13 @@ describe('FDSClientConfiguration endpoint parsing', () => {
   });
 
   it('recognizes the internal endpoint suffix', () => {
-    const config = new FDSClientConfiguration({ endpoint: 'cnbj1-fds.api.xiaomi.net' });
+    const config = new FDSEndpointConfiguration({ endpoint: 'cnbj1-fds.api.xiaomi.net' });
     expect(config.regionName).toBe('cnbj1');
     expect(config.getBaseUri()).toBe('https://cnbj1-fds.api.xiaomi.net/');
   });
 
   it('honors enableHttps for non-virtual endpoints', () => {
-    const config = new FDSClientConfiguration({
+    const config = new FDSEndpointConfiguration({
       endpoint: 'files.fds.api.xiaomi.com',
       enableHttps: false,
     });
@@ -52,26 +52,26 @@ describe('FDSClientConfiguration endpoint parsing', () => {
   });
 
   it('keeps a port from the endpoint', () => {
-    const config = new FDSClientConfiguration({ endpoint: 'files.fds.api.xiaomi.com:8080' });
+    const config = new FDSEndpointConfiguration({ endpoint: 'files.fds.api.xiaomi.com:8080' });
     expect(config.getBaseUri()).toBe('https://files.fds.api.xiaomi.com:8080/');
   });
 
   it('builds an endpoint from a region name', () => {
-    const config = new FDSClientConfiguration({ regionName: 'cnbj1' });
+    const config = new FDSEndpointConfiguration({ regionName: 'cnbj1' });
     expect(config.endpoint).toBe('cnbj1.fds.api.xiaomi.com');
     expect(config.regionName).toBe('cnbj1');
   });
 
   it('rejects an unrecognized endpoint suffix', () => {
-    expect(() => new FDSClientConfiguration({ endpoint: 'my.endpoint.example.com' })).toThrow(
-      GalaxyFDSClientException,
+    expect(() => new FDSEndpointConfiguration({ endpoint: 'my.endpoint.example.com' })).toThrow(
+      GalaxyFDSSignerError,
     );
   });
 });
 
-describe('FDSClientConfiguration virtual-hosted endpoints', () => {
+describe('FDSEndpointConfiguration virtual-hosted endpoints', () => {
   it('forces HTTPS and derives no CDN endpoint', () => {
-    const config = new FDSClientConfiguration({ endpoint: 'files.mi-fds.com' });
+    const config = new FDSEndpointConfiguration({ endpoint: 'files.mi-fds.com' });
     expect(config.shouldUseVirtualAddressing()).toBe(true);
     expect(config.isHttpsEnabled()).toBe(true);
     expect(config.regionName).toBe('files');
@@ -80,12 +80,12 @@ describe('FDSClientConfiguration virtual-hosted endpoints', () => {
   });
 
   it('throws when a CDN URI is requested without a CDN endpoint', () => {
-    const config = new FDSClientConfiguration({ endpoint: 'files.mi-fds.com' });
-    expect(() => config.getCdnBaseUri()).toThrow(GalaxyFDSClientException);
+    const config = new FDSEndpointConfiguration({ endpoint: 'files.mi-fds.com' });
+    expect(() => config.getCdnBaseUri()).toThrow(GalaxyFDSSignerError);
   });
 
   it('uses an explicit CDN endpoint when given', () => {
-    const config = new FDSClientConfiguration({
+    const config = new FDSEndpointConfiguration({
       endpoint: 'files.mi-fds.com',
       cdnEndpoint: 'cdn.example.com',
     });
@@ -93,9 +93,9 @@ describe('FDSClientConfiguration virtual-hosted endpoints', () => {
   });
 });
 
-describe('FDSClientConfiguration explicit base URIs', () => {
+describe('FDSEndpointConfiguration explicit base URIs', () => {
   it('prefers explicit baseUri / cdnBaseUri', () => {
-    const config = new FDSClientConfiguration({
+    const config = new FDSEndpointConfiguration({
       endpoint: 'files.fds.api.xiaomi.com',
       baseUri: 'http://custom.internal/',
       cdnBaseUri: 'http://custom-cdn.internal/',
@@ -105,23 +105,23 @@ describe('FDSClientConfiguration explicit base URIs', () => {
   });
 });
 
-describe('GalaxyFDSClient endpoint options', () => {
+describe('GalaxyFDSSigner endpoint options', () => {
   const credential = new BasicFDSCredential(ACCESS_ID, ACCESS_SECRET);
 
   it('uses the endpoint-derived base URI for pre-signed URIs', () => {
-    const client = new GalaxyFDSClient(credential, { endpoint: 'files.fds.api.xiaomi.com' });
+    const client = new GalaxyFDSSigner(credential, { endpoint: 'files.fds.api.xiaomi.com' });
     const uri = client.generatePresignedUri('my-bucket', 'my-object', FUTURE);
     expect(uri.startsWith('https://files.fds.api.xiaomi.com/my-bucket/my-object?')).toBe(true);
   });
 
   it('still defaults to the built-in base URI without endpoint options', () => {
-    const client = new GalaxyFDSClient(credential);
+    const client = new GalaxyFDSSigner(credential);
     const uri = client.generatePresignedUri('my-bucket', 'my-object', FUTURE);
     expect(uri.startsWith(Common.DEFAULT_FDS_SERVICE_BASE_URI)).toBe(true);
   });
 
   it('exposes the resolved configuration', () => {
-    const client = new GalaxyFDSClient(credential, { endpoint: 'files.fds.api.xiaomi.com' });
+    const client = new GalaxyFDSSigner(credential, { endpoint: 'files.fds.api.xiaomi.com' });
     expect(client.getConfig().getBaseUri()).toBe('https://files.fds.api.xiaomi.com/');
   });
 });

@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest';
 import { HeaderMultiMap } from '../src/auth/signer.js';
 import {
   constructStringToSign,
-  GalaxyFDSClientException,
+  GalaxyFDSSignerError,
   HttpMethod,
   SignAlgorithm,
   Signer,
@@ -379,7 +379,7 @@ describe('signing — golden parity with galaxy-fds-sdk-java 3.0.48', () => {
           );
         if (c.expected.authorizationHeader === undefined) {
           // No date and no Expires: the server would reject it, so we refuse.
-          expect(build).toThrow(GalaxyFDSClientException);
+          expect(build).toThrow(GalaxyFDSSignerError);
         } else {
           expect(build()).toBe(c.expected.authorizationHeader);
         }

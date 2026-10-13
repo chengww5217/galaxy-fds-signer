@@ -10,7 +10,7 @@ import {
   toSignAlgorithm,
   XiaomiHeader,
 } from '../enums.js';
-import { GalaxyFDSClientException } from '../errors.js';
+import { GalaxyFDSSignerError } from '../errors.js';
 import { encodeUriPath, parseUri, parseUriParameters, urlEncode } from './utils.js';
 
 /**
@@ -143,7 +143,7 @@ export const Signer = {
    * Builds the value of the `Authorization` HTTP header:
    * `Galaxy-V2 {accessKeyId}:{base64signature}`.
    *
-   * @throws GalaxyFDSClientException when neither a `date` nor an
+   * @throws GalaxyFDSSignerError when neither a `date` nor an
    *         `x-xiaomi-date` header is present (and the URI carries no
    *         `Expires`): the server rejects such requests, so the signature
    *         would be useless.
@@ -162,7 +162,7 @@ export const Signer = {
       !headers.has(XiaomiHeader.DATE) &&
       getExpires(parseUri(uri).query) <= 0
     ) {
-      throw new GalaxyFDSClientException(
+      throw new GalaxyFDSSignerError(
         `a "${Common.DATE}" or "${XiaomiHeader.DATE}" header is required to sign a request`,
       );
     }
@@ -197,7 +197,7 @@ export const Signer = {
     httpHeaders?: HttpHeaders,
   ): string {
     if (typeof bucketName !== 'string' || bucketName.length === 0) {
-      throw new GalaxyFDSClientException('bucketName must be a non-empty string');
+      throw new GalaxyFDSSignerError('bucketName must be a non-empty string');
     }
     const expiresMillis = toExpiresMillis(expiration);
 
@@ -228,7 +228,7 @@ export const Signer = {
       );
       return `${encodedUri}&${Common.SIGNATURE}=${urlEncode(signature)}`;
     } catch (e) {
-      throw new GalaxyFDSClientException('Failed to generate pre-signed URI', { cause: e });
+      throw new GalaxyFDSSignerError('Failed to generate pre-signed URI', { cause: e });
     }
   },
 };
@@ -249,12 +249,12 @@ const MIN_EXPIRES_MILLIS = 1e12;
 export function toExpiresMillis(expiration: Date | number): number {
   const millis = expiration instanceof Date ? expiration.getTime() : expiration;
   if (typeof millis !== 'number' || !Number.isSafeInteger(millis)) {
-    throw new GalaxyFDSClientException(
+    throw new GalaxyFDSSignerError(
       'expiration must be a valid Date or an integer epoch time in milliseconds',
     );
   }
   if (millis < MIN_EXPIRES_MILLIS) {
-    throw new GalaxyFDSClientException(
+    throw new GalaxyFDSSignerError(
       `expiration ${millis} is too small; it must be in milliseconds (not seconds) since the epoch`,
     );
   }
