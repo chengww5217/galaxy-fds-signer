@@ -119,7 +119,7 @@ export function urlEncode(value?: string): string {
 
   // Replicate java.net.URLEncoder.encode(value, "utf-8").
   let encoded = '';
-  const bytes = Buffer.from(value, 'utf-8');
+  const bytes = utf8Encoder.encode(value);
   for (const byte of bytes) {
     const ch = String.fromCharCode(byte);
     if (URL_ENCODE_SAFE.test(ch)) {
@@ -150,7 +150,7 @@ const URI_PATH_LEGAL = /[A-Za-z0-9\-_.!~*'():@&=+$,;/]/;
  */
 export function encodeUriPath(path: string): string {
   let result = '';
-  const bytes = Buffer.from(path, 'utf-8');
+  const bytes = utf8Encoder.encode(path);
   for (const byte of bytes) {
     const ch = String.fromCharCode(byte);
     if (byte < 0x80 && URI_PATH_LEGAL.test(ch)) {

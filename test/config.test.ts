@@ -108,15 +108,15 @@ describe('FDSEndpointConfiguration explicit base URIs', () => {
 describe('GalaxyFDSSigner endpoint options', () => {
   const credential = new BasicFDSCredential(ACCESS_ID, ACCESS_SECRET);
 
-  it('uses the endpoint-derived base URI for pre-signed URIs', () => {
+  it('uses the endpoint-derived base URI for pre-signed URIs', async () => {
     const client = new GalaxyFDSSigner(credential, { endpoint: 'files.fds.api.xiaomi.com' });
-    const uri = client.generatePresignedUri('my-bucket', 'my-object', FUTURE);
+    const uri = await client.generatePresignedUri('my-bucket', 'my-object', FUTURE);
     expect(uri.startsWith('https://files.fds.api.xiaomi.com/my-bucket/my-object?')).toBe(true);
   });
 
-  it('still defaults to the built-in base URI without endpoint options', () => {
+  it('still defaults to the built-in base URI without endpoint options', async () => {
     const client = new GalaxyFDSSigner(credential);
-    const uri = client.generatePresignedUri('my-bucket', 'my-object', FUTURE);
+    const uri = await client.generatePresignedUri('my-bucket', 'my-object', FUTURE);
     expect(uri.startsWith(Common.DEFAULT_FDS_SERVICE_BASE_URI)).toBe(true);
   });
 

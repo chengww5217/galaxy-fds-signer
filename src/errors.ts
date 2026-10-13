@@ -28,6 +28,17 @@ export function wrapErrors<T>(message: string, fn: () => T): T {
   }
 }
 
+/** Async variant of {@link wrapErrors}; synchronous throws are wrapped too. */
+export async function wrapErrorsAsync<T>(message: string, fn: () => Promise<T>): Promise<T> {
+  try {
+    return await fn();
+  } catch (e) {
+    return wrapErrors(message, () => {
+      throw e;
+    });
+  }
+}
+
 /** Throws unless `value` is a non-empty string. */
 export function requireString(value: unknown, name: string): string {
   if (typeof value !== 'string' || value.length === 0) {

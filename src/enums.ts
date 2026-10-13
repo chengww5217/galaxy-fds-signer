@@ -19,8 +19,7 @@ export type HttpMethod = (typeof HttpMethod)[keyof typeof HttpMethod];
 /**
  * Signature algorithms supported by the Galaxy REST server.
  *
- * The values match the Node.js `crypto` HMAC algorithm names (case-insensitive),
- * mirroring the Java SDK's `javax.crypto.Mac` standard names.
+ * The values mirror the Java SDK's `javax.crypto.Mac` standard names.
  *
  * Ported from `com.xiaomi.infra.galaxy.fds.auth.signature.SignAlgorithm`.
  */
@@ -33,14 +32,7 @@ export const SignAlgorithm = {
 /** Any signature algorithm supported by the Galaxy REST server. */
 export type SignAlgorithm = (typeof SignAlgorithm)[keyof typeof SignAlgorithm];
 
-/**
- * Maps a {@link SignAlgorithm} to the digest name expected by Node.js `crypto.createHmac`.
- */
-export const SIGN_ALGORITHM_DIGEST: Record<SignAlgorithm, string> = {
-  [SignAlgorithm.HmacMD5]: 'md5',
-  [SignAlgorithm.HmacSHA1]: 'sha1',
-  [SignAlgorithm.HmacSHA256]: 'sha256',
-};
+const SIGN_ALGORITHM_SET: ReadonlySet<string> = new Set(Object.values(SignAlgorithm));
 
 /**
  * The subset of S3-style sub-resources recognized by Galaxy FDS. Only these
@@ -106,9 +98,9 @@ export function toHttpMethod(method: unknown): HttpMethod {
  * @throws GalaxyFDSSignerError for unknown algorithms.
  */
 export function toSignAlgorithm(algorithm: unknown): SignAlgorithm {
-  if (typeof algorithm !== 'string' || !Object.hasOwn(SIGN_ALGORITHM_DIGEST, algorithm)) {
+  if (typeof algorithm !== 'string' || !SIGN_ALGORITHM_SET.has(algorithm)) {
     throw new GalaxyFDSSignerError(
-      `unsupported sign algorithm: ${String(algorithm)} (expected one of ${Object.keys(SIGN_ALGORITHM_DIGEST).join(', ')})`,
+      `unsupported sign algorithm: ${String(algorithm)} (expected one of ${[...SIGN_ALGORITHM_SET].join(', ')})`,
     );
   }
   return algorithm as SignAlgorithm;

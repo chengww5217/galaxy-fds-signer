@@ -1,9 +1,6 @@
-import { createHmac } from 'node:crypto';
-
 import { Common, GALAXY_V2_PREFIX, MULTIPART_FORM_DATA } from '../common.js';
 import {
   HttpMethod,
-  SIGN_ALGORITHM_DIGEST,
   SignAlgorithm,
   SUB_RESOURCE_SET,
   SubResource,
@@ -11,7 +8,8 @@ import {
   toSignAlgorithm,
   XiaomiHeader,
 } from '../enums.js';
-import { GalaxyFDSSignerError, requireString, wrapErrors } from '../errors.js';
+import { GalaxyFDSSignerError, requireString, wrapErrors, wrapErrorsAsync } from '../errors.js';
+import { hmac, toBase64 } from './crypto.js';
 import { encodeUriPath, parseUri, parseUriParameters, urlEncode } from './utils.js';
 
 /**
@@ -186,24 +184,24 @@ export const Signer = {
     httpHeaders: HttpHeaders | undefined,
     accessSecret: string,
     algorithm: SignAlgorithm = SignAlgorithm.HmacSHA1,
-  ): Buffer {
-    return wrapErrors('failed to sign request', () => {
+  ): Promise<Uint8Array> {
+    return wrapErrorsAsync('failed to sign request', () => {
       requireString(accessSecret, 'accessSecret');
-      const digest = SIGN_ALGORITHM_DIGEST[toSignAlgorithm(algorithm)];
+      const alg = toSignAlgorithm(algorithm);
       const stringToSign = constructStringToSign(httpMethod, uri, httpHeaders);
-      return createHmac(digest, accessSecret).update(stringToSign, 'utf-8').digest();
+      return hmac(alg, accessSecret, stringToSign);
     });
   },
 
   /** Signs the request and returns the Base64-encoded signature. */
-  signToBase64(
+  async signToBase64(
     httpMethod: HttpMethod,
     uri: string,
     httpHeaders: HttpHeaders | undefined,
     accessSecret: string,
     algorithm: SignAlgorithm = SignAlgorithm.HmacSHA1,
-  ): string {
-    return Signer.sign(httpMethod, uri, httpHeaders, accessSecret, algorithm).toString('base64');
+  ): Promise<string> {
+    return toBase64(await Signer.sign(httpMethod, uri, httpHeaders, accessSecret, algorithm));
   },
 
   /**
@@ -215,14 +213,14 @@ export const Signer = {
    *         `Expires`): the server rejects such requests, so the signature
    *         would be useless.
    */
-  getAuthorizationHeader(
+  async getAuthorizationHeader(
     httpMethod: HttpMethod,
     uri: string,
     httpHeaders: HttpHeaders | undefined,
     accessKeyId: string,
     accessSecret: string,
     algorithm: SignAlgorithm = SignAlgorithm.HmacSHA1,
-  ): string {
+  ): Promise<string> {
     requireString(accessKeyId, 'accessId');
     const headers = wrapErrors('invalid headers', () => HeaderMultiMap.from(httpHeaders));
     if (
@@ -234,7 +232,7 @@ export const Signer = {
         `a "${Common.DATE}" or "${XiaomiHeader.DATE}" header is required to sign a request`,
       );
     }
-    const signature = Signer.signToBase64(httpMethod, uri, headers, accessSecret, algorithm);
+    const signature = await Signer.signToBase64(httpMethod, uri, headers, accessSecret, algorithm);
     return GALAXY_V2_PREFIX + accessKeyId + ':' + signature;
   },
 
@@ -243,7 +241,7 @@ export const Signer = {
    *
    * @see {@link PresignUriInput} for the parameters.
    */
-  generatePresignedUri({
+  async generatePresignedUri({
     baseUri,
     bucketName,
     objectName = '',
@@ -254,7 +252,7 @@ export const Signer = {
     accessSecret,
     algorithm = SignAlgorithm.HmacSHA1,
     headers: httpHeaders,
-  }: PresignUriInput): string {
+  }: PresignUriInput): Promise<string> {
     requireString(bucketName, 'bucketName');
     if (bucketName.includes('/')) {
       // A slash would silently shift the object into a different bucket path.
@@ -264,7 +262,7 @@ export const Signer = {
     const expiresMillis = toExpiresMillis(expiration);
     const subResourceParts = formatSubResources(subResources);
 
-    return wrapErrors('failed to generate pre-signed URI', () => {
+    const encodedUri = wrapErrors('failed to generate pre-signed URI', () => {
       const base = new URL(baseUri);
       const objectPart = objectName.length > 0 ? '/' + objectName : '';
 
@@ -278,17 +276,17 @@ export const Signer = {
       const query = queryParts.join('&');
 
       const port = base.port === '' ? '' : `:${base.port}`;
-      const encodedUri = `${base.protocol}//${base.hostname}${port}${path}?${query}`;
-
-      const signature = Signer.signToBase64(
-        method,
-        encodedUri,
-        httpHeaders,
-        accessSecret,
-        algorithm,
-      );
-      return `${encodedUri}&${Common.SIGNATURE}=${urlEncode(signature)}`;
+      return `${base.protocol}//${base.hostname}${port}${path}?${query}`;
     });
+
+    const signature = await Signer.signToBase64(
+      method,
+      encodedUri,
+      httpHeaders,
+      accessSecret,
+      algorithm,
+    );
+    return `${encodedUri}&${Common.SIGNATURE}=${urlEncode(signature)}`;
   },
 };
 

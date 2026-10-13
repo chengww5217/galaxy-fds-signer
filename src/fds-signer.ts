@@ -77,7 +77,11 @@ export class GalaxyFDSSigner {
    * @param uri         The full request URI.
    * @param httpHeaders Headers participating in the signature (optional).
    */
-  getAuthorizationHeader(httpMethod: HttpMethod, uri: string, httpHeaders?: HttpHeaders): string {
+  async getAuthorizationHeader(
+    httpMethod: HttpMethod,
+    uri: string,
+    httpHeaders?: HttpHeaders,
+  ): Promise<string> {
     return Signer.getAuthorizationHeader(
       httpMethod,
       uri,
@@ -96,12 +100,12 @@ export class GalaxyFDSSigner {
    * @param expiration Expiration time (`Date` or epoch milliseconds).
    * @param options    Method, sub-resources and signed headers.
    */
-  generatePresignedUri(
+  async generatePresignedUri(
     bucketName: string,
     objectName: string,
     expiration: Date | number,
     options: PresignOptions = {},
-  ): string {
+  ): Promise<string> {
     return this.presign(this.config.getBaseUri(), bucketName, objectName, expiration, options);
   }
 
@@ -110,12 +114,12 @@ export class GalaxyFDSSigner {
    *
    * @see {@link generatePresignedUri}
    */
-  generatePresignedCdnUri(
+  async generatePresignedCdnUri(
     bucketName: string,
     objectName: string,
     expiration: Date | number,
     options: PresignOptions = {},
-  ): string {
+  ): Promise<string> {
     return this.presign(this.config.getCdnBaseUri(), bucketName, objectName, expiration, options);
   }
 
@@ -125,7 +129,7 @@ export class GalaxyFDSSigner {
     objectName: string,
     expiration: Date | number,
     { method = HttpMethod.GET, subResources, contentType, contentMD5 }: PresignOptions,
-  ): string {
+  ): Promise<string> {
     if (toExpiresMillis(expiration) <= Date.now()) {
       throw new GalaxyFDSSignerError('expiration must be in the future');
     }

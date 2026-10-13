@@ -9,16 +9,18 @@ const URI = 'http://files.fds.api.xiaomi.com/my-bucket/my-object';
 const HEADERS = { date: 'Sun, 06 Nov 1994 08:49:37 GMT' };
 
 describe('Signer API', () => {
-  it('keeps methods functional when destructured (no reliance on this)', () => {
+  it('keeps methods functional when destructured (no reliance on this)', async () => {
     const { sign, signToBase64, getAuthorizationHeader, generatePresignedUri } = Signer;
 
-    const signature = sign(HttpMethod.GET, URI, HEADERS, ACCESS_SECRET).toString('base64');
-    expect(signToBase64(HttpMethod.GET, URI, HEADERS, ACCESS_SECRET)).toBe(signature);
-    expect(getAuthorizationHeader(HttpMethod.GET, URI, HEADERS, ACCESS_ID, ACCESS_SECRET)).toBe(
-      `Galaxy-V2 ${ACCESS_ID}:${signature}`,
+    const signature = Buffer.from(await sign(HttpMethod.GET, URI, HEADERS, ACCESS_SECRET)).toString(
+      'base64',
     );
+    expect(await signToBase64(HttpMethod.GET, URI, HEADERS, ACCESS_SECRET)).toBe(signature);
     expect(
-      generatePresignedUri({
+      await getAuthorizationHeader(HttpMethod.GET, URI, HEADERS, ACCESS_ID, ACCESS_SECRET),
+    ).toBe(`Galaxy-V2 ${ACCESS_ID}:${signature}`);
+    expect(
+      await generatePresignedUri({
         baseUri: 'http://files.fds.api.xiaomi.com/',
         bucketName: 'my-bucket',
         objectName: 'my-object',
@@ -31,38 +33,41 @@ describe('Signer API', () => {
 });
 
 describe('method and algorithm validation', () => {
-  it('normalizes a lower-case method to upper case', () => {
-    expect(Signer.signToBase64('get' as HttpMethod, URI, HEADERS, ACCESS_SECRET)).toBe(
-      Signer.signToBase64(HttpMethod.GET, URI, HEADERS, ACCESS_SECRET),
+  it('normalizes a lower-case method to upper case', async () => {
+    expect(await Signer.signToBase64('get' as HttpMethod, URI, HEADERS, ACCESS_SECRET)).toBe(
+      await Signer.signToBase64(HttpMethod.GET, URI, HEADERS, ACCESS_SECRET),
     );
   });
 
-  it.each(['PATCH', '', 42])('rejects unsupported method %j', (method) => {
-    expect(() => Signer.signToBase64(method as HttpMethod, URI, HEADERS, ACCESS_SECRET)).toThrow(
-      GalaxyFDSSignerError,
-    );
+  it.each(['PATCH', '', 42])('rejects unsupported method %j', async (method) => {
+    await expect(
+      Signer.signToBase64(method as HttpMethod, URI, HEADERS, ACCESS_SECRET),
+    ).rejects.toThrow(GalaxyFDSSignerError);
   });
 
-  it.each(['HmacSHA512', 'sha1', 'toString'])('rejects unsupported algorithm %j', (algorithm) => {
-    expect(() =>
-      Signer.signToBase64(HttpMethod.GET, URI, HEADERS, ACCESS_SECRET, algorithm as never),
-    ).toThrow(GalaxyFDSSignerError);
-  });
+  it.each(['HmacSHA512', 'sha1', 'toString'])(
+    'rejects unsupported algorithm %j',
+    async (algorithm) => {
+      await expect(
+        Signer.signToBase64(HttpMethod.GET, URI, HEADERS, ACCESS_SECRET, algorithm as never),
+      ).rejects.toThrow(GalaxyFDSSignerError);
+    },
+  );
 });
 
 describe('getAuthorizationHeader date requirement', () => {
   it.each([[{}], [{ 'content-type': 'text/plain' }]])(
     'rejects a request without date headers: %j',
-    (headers) => {
-      expect(() =>
+    async (headers) => {
+      await expect(
         Signer.getAuthorizationHeader(HttpMethod.GET, URI, headers, ACCESS_ID, ACCESS_SECRET),
-      ).toThrow(/date/);
+      ).rejects.toThrow(/date/);
     },
   );
 
-  it.each([[{ Date: 'd' }], [{ 'X-Xiaomi-Date': 'd' }]])('accepts %j', (headers) => {
+  it.each([[{ Date: 'd' }], [{ 'X-Xiaomi-Date': 'd' }]])('accepts %j', async (headers) => {
     expect(
-      Signer.getAuthorizationHeader(HttpMethod.GET, URI, headers, ACCESS_ID, ACCESS_SECRET),
+      await Signer.getAuthorizationHeader(HttpMethod.GET, URI, headers, ACCESS_ID, ACCESS_SECRET),
     ).toMatch(/^Galaxy-V2 /);
   });
 });
@@ -79,20 +84,22 @@ describe('pre-signed sub-resources', () => {
       accessSecret: ACCESS_SECRET,
     });
 
-  it('renders true as a bare name and skips false/undefined', () => {
-    expect(presign({ acl: true, metadata: false, uploadId: undefined })).toContain('/b/o?acl&');
+  it('renders true as a bare name and skips false/undefined', async () => {
+    expect(await presign({ acl: true, metadata: false, uploadId: undefined })).toContain(
+      '/b/o?acl&',
+    );
   });
 
-  it('rejects names that would not be covered by the signature', () => {
-    expect(() => presign({ foo: '1' } as SubResources)).toThrow(/unsupported sub-resource/);
-    expect(() => presign(['partNumber=1'] as unknown as SubResources)).toThrow(
+  it('rejects names that would not be covered by the signature', async () => {
+    await expect(presign({ foo: '1' } as SubResources)).rejects.toThrow(/unsupported sub-resource/);
+    await expect(presign(['partNumber=1'] as unknown as SubResources)).rejects.toThrow(
       GalaxyFDSSignerError,
     );
   });
 });
 
 describe('generatePresignedUri input validation', () => {
-  function presign(expiration: Date | number, bucketName = 'my-bucket'): string {
+  function presign(expiration: Date | number, bucketName = 'my-bucket'): Promise<string> {
     return Signer.generatePresignedUri({
       baseUri: 'http://files.fds.api.xiaomi.com/',
       bucketName,
@@ -103,21 +110,21 @@ describe('generatePresignedUri input validation', () => {
     });
   }
 
-  it('rejects an empty bucket name', () => {
-    expect(() => presign(1700000000000, '')).toThrow(GalaxyFDSSignerError);
-    expect(() => presign(1700000000000, '')).toThrow('bucketName');
+  it('rejects an empty bucket name', async () => {
+    await expect(presign(1700000000000, '')).rejects.toThrow(GalaxyFDSSignerError);
+    await expect(presign(1700000000000, '')).rejects.toThrow('bucketName');
   });
 
   it.each([NaN, Infinity, -Infinity, new Date('not a date'), 1.5e12 + 0.5, '1700000000000'])(
     'rejects an invalid expiration: %s',
-    (expiration) => {
-      expect(() => presign(expiration as number)).toThrow(GalaxyFDSSignerError);
-      expect(() => presign(expiration as number)).toThrow('expiration');
+    async (expiration) => {
+      await expect(presign(expiration as number)).rejects.toThrow(GalaxyFDSSignerError);
+      await expect(presign(expiration as number)).rejects.toThrow('expiration');
     },
   );
 
-  it.each([0, -1, 1700000000])('rejects a non-millisecond expiration: %s', (expiration) => {
-    expect(() => presign(expiration)).toThrow(/milliseconds/);
+  it.each([0, -1, 1700000000])('rejects a non-millisecond expiration: %s', async (expiration) => {
+    await expect(presign(expiration)).rejects.toThrow(/milliseconds/);
   });
 });
 

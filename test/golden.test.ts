@@ -373,8 +373,8 @@ describe('signing — golden parity with galaxy-fds-sdk-java 3.0.48', () => {
         expect(actual).toBe(c.expected.stringToSign);
       });
 
-      it('produces the same signature', () => {
-        const actual = Signer.signToBase64(
+      it('produces the same signature', async () => {
+        const actual = await Signer.signToBase64(
           c.httpMethod,
           c.uri,
           headers,
@@ -384,7 +384,7 @@ describe('signing — golden parity with galaxy-fds-sdk-java 3.0.48', () => {
         expect(actual).toBe(c.expected.signature);
       });
 
-      it('produces the same authorization header', () => {
+      it('produces the same authorization header', async () => {
         const build = () =>
           Signer.getAuthorizationHeader(
             c.httpMethod,
@@ -396,9 +396,9 @@ describe('signing — golden parity with galaxy-fds-sdk-java 3.0.48', () => {
           );
         if (c.expected.authorizationHeader === undefined) {
           // No date and no Expires: the server would reject it, so we refuse.
-          expect(build).toThrow(GalaxyFDSSignerError);
+          await expect(build()).rejects.toThrow(GalaxyFDSSignerError);
         } else {
-          expect(build()).toBe(c.expected.authorizationHeader);
+          expect(await build()).toBe(c.expected.authorizationHeader);
         }
       });
     });
@@ -407,8 +407,8 @@ describe('signing — golden parity with galaxy-fds-sdk-java 3.0.48', () => {
 
 describe('pre-signed URI — golden parity with galaxy-fds-sdk-java 3.0.48', () => {
   for (const c of PRESIGN_CASES) {
-    it(c.name, () => {
-      const actual = Signer.generatePresignedUri({
+    it(c.name, async () => {
+      const actual = await Signer.generatePresignedUri({
         baseUri: c.baseUri,
         bucketName: c.bucketName,
         objectName: c.objectName,

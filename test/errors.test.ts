@@ -45,13 +45,14 @@ describe('error normalization', () => {
       'an invalid baseUri option',
       () => new GalaxyFDSSigner({ accessId: 'id', accessSecret: 's' }, { baseUri: 'nope' }),
     ],
-  ])('throws GalaxyFDSSignerError for %s', (_name, fn) => {
-    expect(fn).toThrow(GalaxyFDSSignerError);
+  ])('throws GalaxyFDSSignerError for %s', async (_name, fn) => {
+    // Covers both synchronous throws (constructors) and rejected promises.
+    await expect((async () => fn())()).rejects.toThrow(GalaxyFDSSignerError);
   });
 
-  it('does not re-wrap its own errors', () => {
+  it('does not re-wrap its own errors', async () => {
     try {
-      Signer.generatePresignedUri({
+      await Signer.generatePresignedUri({
         baseUri: 'http://h/',
         bucketName: 'b',
         expiration: 1,

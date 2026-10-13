@@ -10,12 +10,10 @@ export default defineConfig({
       formats: ['es', 'cjs'],
       fileName: (format) => (format === 'es' ? 'index.js' : 'index.cjs'),
     },
-    // Keep Node built-ins external; this library has zero runtime dependencies.
-    rollupOptions: {
-      external: [/^node:/],
-    },
+    // Web-standard APIs only (no node:* imports), so one bundle serves Node,
+    // Cloudflare Workers, Vercel Edge, Deno, Bun and browsers.
     sourcemap: true,
-    target: 'node18',
+    target: 'es2022',
     minify: false,
   },
   plugins: [

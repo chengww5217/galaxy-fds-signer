@@ -40,6 +40,14 @@ export default [
   },
   prettier,
   {
+    // The library must run on Web-standard runtimes (Workers, Edge, browsers).
+    files: ['src/**/*.ts'],
+    rules: {
+      'no-restricted-imports': ['error', { patterns: ['node:*'] }],
+      'no-restricted-globals': ['error', 'Buffer', 'process', 'require', '__dirname'],
+    },
+  },
+  {
     // src/enums.ts intentionally pairs a const with a same-named union type
     // (the enum replacement pattern); @typescript-eslint/no-redeclare does
     // not treat variable+type-alias as declaration merging.

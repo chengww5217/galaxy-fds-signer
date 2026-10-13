@@ -1,0 +1,11 @@
+{
+  // Type-checks the library sources against Web-standard APIs only (no
+  // @types/node), so any accidental use of Buffer, process or node:* fails.
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "lib": ["ES2022", "DOM"],
+    "types": [],
+    "noEmit": true
+  },
+  "include": ["src"]
+}
