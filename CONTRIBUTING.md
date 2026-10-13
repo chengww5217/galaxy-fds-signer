@@ -22,6 +22,10 @@ CI.
   the Java SDK and update them inline in `test/golden.test.ts` /
   `test/utils.test.ts` together with your change.
 - Run `npm run typecheck` and `npm run lint` before opening a pull request.
+  `lint` is ESLint plus `prettier --check`, and `npm run fix` applies both sets
+  of fixes: ESLint first, Prettier last, so the final layout is always
+  Prettier's. `.prettierignore` keeps Prettier away from the generated docs
+  tables and `test/fixtures/`.
 - Live requests against a real bucket live in `test/integration/` and are
   excluded from `npm test`, so a full `npm test` never touches the network. Run
   them deliberately with `npm run test:integration` and `FDS_*` credentials;

@@ -60,6 +60,10 @@ and the config caps each case at 30 s.
   including a best-effort sweep in `afterAll` when a case fails midway.
 - Object names are unique per run, so a re-run never reads a stale object and
   never hits a warm CDN entry.
+- Do not leave bare `npx vitest` (or `vitest watch`) running with `FDS_*`
+  exported: it starts every project, so each file change would re-run this
+  suite against the real bucket. Watch the unit project explicitly with
+  `npx vitest watch --project unit`.
 
 ## Reading the results
 

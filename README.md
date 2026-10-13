@@ -44,7 +44,8 @@ Every failure is a `GalaxyFDSSignerError` with a stable `code` (e.g. `INVALID_BU
 ```bash
 npm install
 npm run typecheck   # also checks src against Web APIs only (tsconfig.web.json)
-npm run lint
+npm run lint        # ESLint + Prettier --check
+npm run fix         # the same two, with their fixes applied
 npm test            # includes Vercel Edge (edge-runtime) and Cloudflare (workerd) runs
 npm run build
 npm run docs        # regenerates the tables in docs/ from test/fixtures/operations.json

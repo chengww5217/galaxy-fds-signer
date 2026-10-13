@@ -31,16 +31,21 @@
   "scripts": {
     "build": "vite build",
     "test": "vitest run --project unit",
-    "test:watch": "vitest --project unit",
     "test:integration": "npm run build && vitest run --project integration",
     "typecheck": "tsc --noEmit && tsc -p tsconfig.web.json",
-    "lint": "eslint .",
-    "lint:fix": "eslint . --fix",
+    "lint": "eslint . && prettier --check .",
+    "fix": "eslint . --fix && prettier --write .",
     "docs": "node scripts/generate-docs.mjs",
     "release": "node scripts/release.mjs",
-    "format": "prettier --write \"src/**/*.ts\" \"test/**/*.ts\"",
     "check:package": "publint && attw --pack .",
     "prepublishOnly": "npm run typecheck && npm run lint && npm test && npm run build && npm run check:package"
+  },
+  "prettier": {
+    "semi": true,
+    "singleQuote": true,
+    "trailingComma": "all",
+    "printWidth": 100,
+    "tabWidth": 2
   },
   "keywords": [
     "xiaomi",
