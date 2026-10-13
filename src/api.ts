@@ -133,7 +133,7 @@ const DNS_LABEL = /^[A-Za-z0-9](?:[A-Za-z0-9-]{0,61}[A-Za-z0-9])?$/;
  * });
  * ```
  *
- * Runs on any runtime with Web Crypto: Node.js >= 20, Cloudflare Workers,
+ * Runs on any runtime with Web Crypto: Node.js >= 22, Cloudflare Workers,
  * Vercel Edge, Deno, Bun. Configuration errors throw synchronously.
  */
 export function createSigner(options: SignerOptions): FdsSigner {

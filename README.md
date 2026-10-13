@@ -18,7 +18,7 @@ Galaxy-V2 request signing and pre-signed URLs for [Xiaomi Galaxy FDS](https://gi
 npm install galaxy-fds-signer
 ```
 
-Requires Node.js >= 20, or any runtime with `crypto.subtle`.
+Requires Node.js >= 22, or any runtime with `crypto.subtle`.
 
 ## Quick start
 

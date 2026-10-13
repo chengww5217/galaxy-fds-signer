@@ -9,8 +9,9 @@ npm install
 npm test
 ```
 
-The published package runs on Node.js >= 18, but the development toolchain
-(vitest 5) requires Node.js >= 22 — use Node 22/24 locally, matching CI.
+The published package supports Node.js >= 22, and so does the development
+toolchain: vitest 5 requires Node.js >= 22.12. Use Node 22/24 locally, matching
+CI.
 
 ## Guidelines
 
