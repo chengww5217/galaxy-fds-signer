@@ -37,7 +37,7 @@ const req = await signer.signRequest({ method: 'PUT', object: 'cat.png' });
 await fetch(req.url, { ...req, body: file });
 ```
 
-Every failure is a `GalaxyFDSSignerError` with a stable `code` (e.g. `INVALID_BUCKET`), a `kind` (`config`, `input` or `runtime`) and the offending `field`. Catch it in your handler: `input` errors are caused by the request and can be returned to the client as JSON (`Response.json(err)` sends `{ name, code, kind, field, message }`), while `config` and `runtime` errors belong in your logs. See [Errors](./docs/api.md#errors).
+Every failure is a `GalaxyFDSSignerError` with a stable `code` (e.g. `INVALID_BUCKET`), a `kind` (`config`, `input` or `runtime`) and, when there is one, the offending `field`. Catch it in your handler: `input` errors are caused by the request and can be returned to the client as JSON (`Response.json(err)` sends `{ name, code, kind, field, message }`), while `config` and `runtime` errors belong in your logs. See [Errors](./docs/api.md#errors).
 
 ## Documentation
 
@@ -54,15 +54,15 @@ npm run lint        # ESLint + Prettier --check
 npm run fix         # the same two, with their fixes applied
 npm test            # includes Vercel Edge (edge-runtime) and Cloudflare (workerd) runs
 npm run build       # tsdown: dist/index.js + index.d.ts, then publint and attw
-npm run verify      # all of the above, plus installing and loading the packed tarball
+npm run verify      # typecheck, lint, test, build and installing the packed tarball
 npm run docs        # regenerates the tables in docs/ from test/fixtures/operations.json
 ```
 
 `test/integration/` holds live requests against a real bucket, exercising the built `dist/` rather than `src/`. `vite.config.ts` defines two Vitest projects — `unit` and `integration` — and `npm test` runs only `unit`, so the offline suite stays hermetic and a stray `FDS_*` in the environment can never upload anything; run the live project explicitly with `npm run test:integration`, which builds `dist/` first.
 
-It covers one representative of each request shape (header-signed object CRUD, a value-less sub-resource, multipart sub-resources, unsigned query parameters, a pre-signed upload and a CDN download) rather than all 57 operations, which the golden tests already pin byte-for-byte. It is skipped unless `FDS_ACCESS_ID`, `FDS_ACCESS_SECRET`, `FDS_BUCKET` and one of `FDS_ENDPOINT` / `FDS_REGION` / `FDS_BASE_URI` are set; `FDS_UPLOAD_FILE` picks the local file (a temporary one is used otherwise) and `FDS_CDN_BASE_URI` overrides the CDN host derived from the endpoint (`cdn.{region}.fds.api.mi-img.com`). The CDN read-back is skipped when no CDN host applies, e.g. for a bare `FDS_BASE_URI`. Everything is created under `integration/` and deleted afterwards; bucket-level and destructive operations are out of scope on purpose, as the file header explains.
+It covers one representative of each request shape, is skipped without the `FDS_*` credentials, and never touches bucket-level or destructive operations; `test/integration/README.md` has the exact variables, the cases and the safety notes.
 
-The expected values in `test/golden.test.ts`, `test/api.test.ts` and `test/fixtures/operations.json` were produced by the official `galaxy-fds-sdk-java` (3.0.48). If you change signing behavior, regenerate the affected values from the Java SDK. `test/docs.test.ts` fails if the generated docs are out of date.
+The expected values in `test/golden.test.ts`, `test/api.test.ts`, `test/utils.test.ts` and `test/fixtures/operations.json` were produced by the official `galaxy-fds-sdk-java` (3.0.48). If you change signing behavior, regenerate the affected values from the Java SDK. `test/docs.test.ts` fails if the generated docs are out of date.
 
 ## License
 

@@ -19,8 +19,8 @@ CI.
   `galaxy-fds-sdk-java`. Any change touching `src/auth/` must keep the golden
   parity tests passing (`npm test`).
 - If you change signing behavior, re-derive the affected expected values from
-  the Java SDK and update them inline in `test/golden.test.ts` /
-  `test/utils.test.ts` together with your change.
+  the Java SDK and update them inline in `test/golden.test.ts`,
+  `test/api.test.ts` and `test/utils.test.ts` together with your change.
 - Run `npm run verify` before opening a pull request: typecheck, lint, tests,
   the build (with publint and attw) and a smoke test of the packed tarball.
   `lint` is ESLint plus `prettier --check`, and `npm run fix` applies both sets

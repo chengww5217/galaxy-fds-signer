@@ -30,6 +30,8 @@ Validates the options and returns a frozen signer object. Any configuration erro
 
 ### `SignerOptions`
 
+It extends the exported `FDSEndpointOptions`, which holds the addressing options (`endpoint`, `regionName`, `cdnEndpoint`, `enableHttps`, `baseUri`, `cdnBaseUri`); every option is listed below.
+
 | Option | Type | Default | Description |
 | --- | --- | --- | --- |
 | `accessId` | `string` | required | Access key id. |
@@ -71,7 +73,7 @@ Builds a request that authenticates with an `Authorization: Galaxy-V2 …` heade
 
 ### `SignRequestInput`
 
-Give either a resource target (`bucket` / `object` / `subResources` / `cdn` / `query`) or an explicit `url`, but not both.
+`SignRequestInput` is the union of the exported `ResourceTarget` and `UrlTarget`: give either a resource target (`bucket` / `object` / `subResources` / `cdn` / `query`) or an explicit `url`, but not both.
 
 | Field | Type | Default | Description |
 | --- | --- | --- | --- |
@@ -214,15 +216,15 @@ Every failure is a `GalaxyFDSSignerError`, a subclass of `Error`. `createSigner`
 ```ts
 class GalaxyFDSSignerError extends Error {
   readonly code: GalaxyFDSSignerErrorCode; // e.g. 'INVALID_BUCKET'
-  readonly kind: 'config' | 'input' | 'runtime';
+  readonly kind: GalaxyFDSSignerErrorKind; // 'config' | 'input' | 'runtime'
   readonly field?: string;                 // e.g. 'bucket', 'expiresIn'
-  toJSON(): { name, code, kind, field?, message };
+  toJSON(): GalaxyFDSSignerErrorJSON;      // { name, code, kind, field?, message }
 }
 ```
 
-- `code` and `kind` are stable; `message` is for humans and may change. `ErrorCode` lists every code (`ErrorCode.INVALID_BUCKET === 'INVALID_BUCKET'`).
+- `code` and `kind` are stable; `message` is for humans and may change. The types are `GalaxyFDSSignerErrorCode` and `GalaxyFDSSignerErrorKind`, and `ErrorCode` lists every code (`ErrorCode.INVALID_BUCKET === 'INVALID_BUCKET'`).
 - `field` names the option or input field at fault, when there is one.
-- `cause` holds the underlying error, if any (for example from `new URL`). `toJSON()` leaves out `cause` and the stack, so `JSON.stringify(err)` is safe to send. Messages never include the secret.
+- `cause` holds the underlying error, if any (for example from `new URL`). `toJSON()` returns the exported `GalaxyFDSSignerErrorJSON` without `cause` or the stack, so `JSON.stringify(err)` is safe to send. Messages never include the secret.
 - `kind` tells you who is at fault: `config` errors come from your signer configuration and may mention internal hosts, `input` errors from the request being signed, `runtime` errors from the environment. Mapping errors to HTTP statuses is up to you.
 
 | `code` | `kind` | `field` | Cause |
