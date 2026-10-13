@@ -26,6 +26,9 @@ export interface GalaxyFDSSignerOptions extends FDSEndpointOptions {
   signAlgorithm?: SignAlgorithm;
 }
 
+/** A single DNS label: what a bucket must be to serve as a subdomain. */
+const DNS_LABEL = /^[A-Za-z0-9](?:[A-Za-z0-9-]{0,61}[A-Za-z0-9])?$/;
+
 /** Options for {@link GalaxyFDSSigner.generatePresignedUri}. */
 export interface PresignOptions {
   /** The HTTP method the pre-signed URI will be used with (defaults to GET). */
@@ -172,6 +175,14 @@ export class GalaxyFDSSigner {
     const url = new URL(baseUri);
     if (url.hostname !== endpoint.split(':')[0].toLowerCase()) {
       return baseUri;
+    }
+    if (!DNS_LABEL.test(bucketName)) {
+      // The bucket becomes a subdomain: anything but a single DNS label
+      // (e.g. "a.b", "x@evil.com", "a/b") would change the target host.
+      throw new GalaxyFDSSignerError(
+        `bucketName ${JSON.stringify(bucketName)} cannot be used with virtual-hosted addressing: ` +
+          'it must be a DNS label (letters, digits and inner hyphens, at most 63 characters)',
+      );
     }
     return `${url.protocol}//${bucketName}.${url.host}/`;
   }

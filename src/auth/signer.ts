@@ -256,6 +256,10 @@ export const Signer = {
     headers: httpHeaders,
   }: PresignUriInput): string {
     requireString(bucketName, 'bucketName');
+    if (bucketName.includes('/')) {
+      // A slash would silently shift the object into a different bucket path.
+      throw new GalaxyFDSSignerError(`bucketName must not contain "/": ${bucketName}`);
+    }
     requireString(accessId, 'accessId');
     const expiresMillis = toExpiresMillis(expiration);
     const subResourceParts = formatSubResources(subResources);

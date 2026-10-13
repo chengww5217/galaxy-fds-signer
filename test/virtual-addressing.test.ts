@@ -62,3 +62,33 @@ describe('virtual-hosted-style addressing', () => {
     );
   });
 });
+
+describe('bucket name validation', () => {
+  it.each(['a.b', 'x@evil.com', 'a:1', '-ab', 'ab-', 'a'.repeat(64), 'a b'])(
+    'rejects %j as a virtual-hosted bucket',
+    (bucket) => {
+      expect(() => newVirtualClient().generatePresignedUri(bucket, 'o', EXPIRES)).toThrow(
+        GalaxyFDSSignerError,
+      );
+    },
+  );
+
+  it.each(['a', 'my-bucket', 'B1', 'a'.repeat(63)])(
+    'accepts %j as a virtual-hosted bucket',
+    (b) => {
+      expect(newVirtualClient().generatePresignedUri(b, 'o', EXPIRES)).toMatch(
+        new RegExp(`^https://${b.toLowerCase()}\\.files\\.mi-fds\\.com/${b}/o\\?`),
+      );
+    },
+  );
+
+  it('rejects a slash in any bucket name', () => {
+    const client = new GalaxyFDSSigner({ accessId: ACCESS_ID, accessSecret: ACCESS_SECRET });
+    expect(() => client.generatePresignedUri('a/b', 'o', EXPIRES)).toThrow(/must not contain/);
+  });
+
+  it('allows dotted bucket names with path-style addressing', () => {
+    const client = new GalaxyFDSSigner({ accessId: ACCESS_ID, accessSecret: ACCESS_SECRET });
+    expect(client.generatePresignedUri('a.b', 'o', EXPIRES)).toContain('/a.b/o?');
+  });
+});
