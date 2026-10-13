@@ -17,6 +17,7 @@ const CODE_KINDS = {
   INVALID_BUCKET_OPTION: 'config',
   CDN_NOT_CONFIGURED: 'config',
   UNSUPPORTED_METHOD: 'input',
+  INVALID_INPUT: 'input',
   INVALID_HEADERS: 'input',
   MISSING_DATE: 'input',
   INVALID_BUCKET: 'input',

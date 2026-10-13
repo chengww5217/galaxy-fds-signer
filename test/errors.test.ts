@@ -180,6 +180,20 @@ describe('error codes', () => {
       () => signer.signRequest({ method: 'PATCH' as never, bucket: 'b' }),
     ],
     [
+      'INVALID_INPUT',
+      'input',
+      'input',
+      'missing signRequest input',
+      () => signer.signRequest(undefined as never),
+    ],
+    [
+      'INVALID_INPUT',
+      'input',
+      'input',
+      'missing presign input',
+      () => signer.presign(undefined as never),
+    ],
+    [
       'INVALID_HEADERS',
       'input',
       'headers',

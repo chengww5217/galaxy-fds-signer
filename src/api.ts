@@ -189,7 +189,8 @@ export function createSigner(options: SignerOptions): FdsSigner {
   };
 
   async function signRequest(input: SignRequestInput): Promise<SignedRequest> {
-    const method = toHttpMethod(input?.method ?? HttpMethod.GET);
+    requireInput(input, 'signRequest');
+    const method = toHttpMethod(input.method ?? HttpMethod.GET);
     const headers = toHeaderRecord(input.headers);
     const extraQuery = Object.entries(input.query ?? {}).map(
       ([k, v]) => `${urlEncode(k)}=${urlEncode(String(v))}`,
@@ -236,7 +237,8 @@ export function createSigner(options: SignerOptions): FdsSigner {
   }
 
   async function presign(input: PresignInput): Promise<PresignedRequest> {
-    const method = toHttpMethod(input?.method ?? HttpMethod.GET);
+    requireInput(input, 'presign');
+    const method = toHttpMethod(input.method ?? HttpMethod.GET);
     const headers = toHeaderRecord(input.headers);
     const expiresAt = resolveExpiration(input.expires, input.expiresIn);
     const bucket = input.bucket ?? defaultBucket;
@@ -333,6 +335,20 @@ function resolveDefaultBucket(
     assertDnsLabel(bucket, 'INVALID_BUCKET_OPTION');
   }
   return bucket;
+}
+
+/**
+ * Rejects a `signRequest` / `presign` call made without an input object. The
+ * methods are typed to require one, but a plain-JavaScript caller can omit it;
+ * without this guard the body would throw a raw `TypeError`, breaking the
+ * "every failure is a `GalaxyFDSSignerError`" contract.
+ */
+function requireInput(input: unknown, name: string): void {
+  if (input === null || typeof input !== 'object') {
+    throw new GalaxyFDSSignerError('INVALID_INPUT', `${name} input must be an object`, {
+      field: 'input',
+    });
+  }
 }
 
 function validateBucket(
