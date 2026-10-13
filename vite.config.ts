@@ -2,6 +2,7 @@ import { copyFileSync, existsSync, readdirSync, rmSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { defineConfig, type Plugin } from 'vite';
 import dts from 'vite-plugin-dts';
+import { configDefaults } from 'vitest/config';
 
 /**
  * `bundleTypes` still writes the per-module declarations it bundled from (and
@@ -65,4 +66,27 @@ export default defineConfig({
     }),
     finalizeDist(),
   ],
+  test: {
+    // Two projects, so the live suite cannot be reached by accident: `npm test`
+    // runs `unit` only, and `test/integration` (which talks to a real bucket)
+    // needs `--project integration` plus a build. See test/integration/README.md.
+    projects: [
+      {
+        test: {
+          name: 'unit',
+          include: ['test/**/*.test.ts'],
+          exclude: [...configDefaults.exclude, 'test/integration/**'],
+        },
+      },
+      {
+        test: {
+          name: 'integration',
+          include: ['test/integration/**/*.test.ts'],
+          // Nine cases against a real endpoint, with deliberately small payloads:
+          // this only guards against a hang.
+          testTimeout: 30_000,
+        },
+      },
+    ],
+  },
 });

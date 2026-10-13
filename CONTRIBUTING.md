@@ -22,6 +22,10 @@ CI.
   the Java SDK and update them inline in `test/golden.test.ts` /
   `test/utils.test.ts` together with your change.
 - Run `npm run typecheck` and `npm run lint` before opening a pull request.
+- Live requests against a real bucket live in `test/integration/` and are
+  excluded from `npm test`, so a full `npm test` never touches the network. Run
+  them deliberately with `npm run test:integration` and `FDS_*` credentials;
+  `test/integration/README.md` has the exact variables and the safety notes.
 - Keep the package dependency-free at runtime; use Node.js built-ins only.
 - Use `undefined`, not `null`, for absent values in the library's own types: mark
   optional properties and parameters with `?`, and normalize any `null` at the
