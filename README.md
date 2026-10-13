@@ -4,27 +4,13 @@
 [![CI](https://github.com/chengww5217/galaxy-fds-signer/actions/workflows/ci.yml/badge.svg)](https://github.com/chengww5217/galaxy-fds-signer/actions/workflows/ci.yml)
 [![License](https://img.shields.io/badge/license-Apache--2.0-blue.svg)](./LICENSE)
 
-A Node.js / TypeScript server-side signer for [Xiaomi Galaxy FDS](https://github.com/XiaoMi/galaxy-fds-sdk-java) (File Data Storage), focused on **Galaxy-V2 request signing** and **pre-signed URI generation**.
+Galaxy-V2 request signing and pre-signed URLs for [Xiaomi Galaxy FDS](https://github.com/XiaoMi/galaxy-fds-sdk-java) (File Data Storage). It returns plain request objects (`{ url, method, headers }`) that you can pass directly to `fetch`.
 
-It is a faithful port of the signing logic in the official [`galaxy-fds-sdk-java`](https://github.com/XiaoMi/galaxy-fds-sdk-java) (3.0.48). Signature output is verified byte-for-byte against the Java SDK via a golden test suite.
+- Runs on Node.js, Cloudflare Workers, Vercel Edge, Deno and Bun. It uses only Web-standard APIs (`crypto.subtle`, `TextEncoder`, `URL`), with no `node:*` or `Buffer`.
+- Signatures match the official `galaxy-fds-sdk-java` byte-for-byte, checked by golden tests.
+- No runtime dependencies. Ships ESM, CommonJS and TypeScript declarations.
 
-> Scope: this package implements **authentication signing** and **pre-signed URIs** only. It performs no network I/O and does not include object upload/download, bucket management, multipart upload, or Kerberos. Use the generated `Authorization` header or pre-signed URI with any HTTP client.
->
-> Intended to run **server-side** (for example inside a serverless function): signing requires the access secret, so never ship this to a browser or any other untrusted client. Who is allowed to sign which resource is the caller's responsibility.
-
-## Features
-
-- Galaxy-V2 `Authorization` header generation (`HmacSHA1` / `HmacSHA256` / `HmacMD5`)
-- Pre-signed URI and pre-signed CDN URI generation
-- Zero runtime dependencies — uses only Node.js built-ins (`node:crypto`, `node:url`)
-- Ships ESM, CommonJS, and TypeScript declarations
-- Byte-for-byte parity with the Java SDK, enforced by tests
-
-## Requirements
-
-- Node.js >= 18
-- For TypeScript consumers, `@types/node` (the public declarations reference
-  `Buffer` via `Signer.sign`)
+> This package only signs requests; it does not perform any network I/O itself. The access secret must stay on the server or in an edge function. Hand out signed requests or pre-signed URLs to browsers, never the secret. Deciding who may sign what is the caller's responsibility.
 
 ## Installation
 
@@ -32,141 +18,139 @@ It is a faithful port of the signing logic in the official [`galaxy-fds-sdk-java
 npm install galaxy-fds-signer
 ```
 
+Requires Node.js >= 20 (global Web Crypto), or any runtime with `crypto.subtle`.
+
 ## Usage
 
-### Generate an `Authorization` header
-
 ```ts
-import { GalaxyFDSSigner, HttpMethod } from 'galaxy-fds-signer';
+import { createSigner } from 'galaxy-fds-signer';
 
-// A plain { accessId, accessSecret } object works, as does any
-// GalaxyFDSCredential implementation such as BasicFDSCredential.
-const client = new GalaxyFDSSigner({
-  accessId: 'your-access-id',
-  accessSecret: 'your-access-secret',
+const signer = createSigner({
+  accessId: env.FDS_ACCESS_ID,
+  accessSecret: env.FDS_ACCESS_SECRET,
+  endpoint: 'cnbj1.fds.api.xiaomi.com', // or baseUri: 'https://…/'
 });
-
-const uri = 'http://files.fds.api.xiaomi.com/my-bucket/my-object';
-const headers = { date: new Date().toUTCString() };
-
-const authorization = client.getAuthorizationHeader(HttpMethod.GET, uri, headers);
-// => "Galaxy-V2 your-access-id:<base64-signature>"
-
-// Then issue the request with your HTTP client of choice:
-// fetch(uri, { headers: { ...headers, authorization } })
 ```
 
-### Generate a pre-signed URI
+### Signed requests (`Authorization` header)
 
 ```ts
-import { GalaxyFDSSigner, SubResource } from 'galaxy-fds-signer';
-
-const client = new GalaxyFDSSigner({
-  accessId: 'your-access-id',
-  accessSecret: 'your-access-secret',
-});
-
-// Valid for one hour from now.
-const expiration = new Date(Date.now() + 60 * 60 * 1000);
-
-// Download URL
-const downloadUri = client.generatePresignedUri('my-bucket', 'my-object', expiration);
-
-// Upload URL (PUT) — the options object reads better than positional arguments
-const uploadUri = client.generatePresignedUri('my-bucket', 'my-object', expiration, {
+const req = await signer.signRequest({
   method: 'PUT',
+  bucket: 'my-bucket',
+  object: 'photos/cat.png',
+  headers: { 'content-type': 'image/png' },
 });
+// req = {
+//   url: 'https://cnbj1.fds.api.xiaomi.com/my-bucket/photos/cat.png',
+//   method: 'PUT',
+//   headers: { 'content-type': 'image/png', 'x-xiaomi-date': '…', authorization: 'Galaxy-V2 …' },
+// }
 
-// Pre-signed URI targeting a sub-resource (e.g. ACL)
-const aclUri = client.generatePresignedUri('my-bucket', 'my-object', expiration, {
-  subResources: [SubResource.ACL],
-});
-
-// CDN variant
-const cdnUri = client.generatePresignedCdnUri('my-bucket', 'my-object', expiration);
+await fetch(req.url, { ...req, body: file });
 ```
 
-### Custom endpoints
+`signRequest` adds an `x-xiaomi-date` header automatically, because browsers forbid setting `Date` from script. Send every header in `req.headers` exactly as returned, since they are all part of the signature.
+
+### Pre-signed URLs
 
 ```ts
-const client = new GalaxyFDSSigner(credential, {
-  baseUri: 'https://my-bucket.mi-fds.com/',
-  cdnBaseUri: 'http://cdn.fds.api.xiaomi.com/',
-  // signAlgorithm: SignAlgorithm.HmacSHA256,
+const { url, method, headers, expiresAt } = await signer.presign({
+  method: 'PUT',
+  bucket: 'my-bucket',
+  object: 'uploads/report.pdf',
+  expiresIn: 600, // seconds; default 900. Or `expires: Date | epoch ms`
+  headers: { 'content-type': 'application/pdf' }, // optional, becomes part of the signature
 });
+
+// In the browser:
+await fetch(url, { method, headers, body: file });
 ```
 
-### Low-level signer
+`headers` lists exactly what the client has to send for the signature to verify. It is empty unless you signed some.
 
-`Signer` exposes the same primitives as the Java `Signer` class if you need them directly:
+### Edge function example (Cloudflare Workers / Vercel Edge)
 
 ```ts
-import { Signer, HttpMethod, SignAlgorithm } from 'galaxy-fds-signer';
+import { createSigner } from 'galaxy-fds-signer';
 
-const uri = 'http://files.fds.api.xiaomi.com/my-bucket/my-object';
-const headers = { date: new Date().toUTCString() };
-
-const signature = Signer.signToBase64(
-  HttpMethod.GET,
-  uri,
-  headers,
-  'your-access-secret',
-  SignAlgorithm.HmacSHA1,
-);
+export default {
+  async fetch(request: Request, env: Env) {
+    const signer = createSigner({
+      accessId: env.FDS_ACCESS_ID,
+      accessSecret: env.FDS_ACCESS_SECRET,
+      endpoint: 'cnbj1.fds.api.xiaomi.com',
+    });
+    const { name } = await request.json<{ name: string }>();
+    // Authorize the caller and validate `name` here.
+    return Response.json(await signer.presign({ method: 'PUT', bucket: 'uploads', object: name }));
+  },
+};
 ```
 
-## API overview
+The result is plain JSON, so the browser can pass it straight to `fetch`.
+
+### More targets
+
+```ts
+// Sub-resources are signed and URL-encoded for you
+await signer.signRequest({ method: 'PUT', bucket, object, subResources: { uploadId, partNumber: 1 } });
+await signer.presign({ bucket, object, subResources: ['acl'] });
+
+// Extra query parameters are sent but not signed (e.g. listing objects)
+await signer.signRequest({ bucket, query: { prefix: 'photos/', maxKeys: 100 } });
+
+// CDN endpoint
+await signer.presign({ bucket, object, cdn: true });
+
+// An explicit URL
+await signer.signRequest({ method: 'DELETE', url: 'https://cnbj1.fds.api.xiaomi.com/b/o' });
+
+// One-shot helpers
+import { signRequest, presign } from 'galaxy-fds-signer';
+await presign(options, { bucket, object });
+```
+
+## API
 
 | Export | Description |
 | --- | --- |
-| `GalaxyFDSSigner` | High-level client for auth headers and pre-signed URIs |
-| `BasicFDSCredential` | Static access-id / access-secret credential (a plain `{ accessId, accessSecret }` object works too) |
-| `PresignOptions` | Options-object form for the pre-signing methods |
-| `Signer` | Low-level signing primitives (`sign`, `signToBase64`, `getAuthorizationHeader`, `generatePresignedUri`) |
-| `HttpMethod`, `SignAlgorithm`, `SubResource`, `XiaomiHeader` | Constant maps with literal union types, ported from the Java SDK enums |
-| `GalaxyFDSSignerError` | Error type thrown by the library |
-| `calcMD5`, `urlEncode`, `getGMTDatetime`, `parseUri`, `parseUriParameters` | Signing utilities |
+| `createSigner(options)` | Returns `{ accessId, signRequest, presign }`. The secret is held in a closure and never exposed. Configuration errors throw synchronously. |
+| `signRequest(options, input)` / `presign(options, input)` | One-shot forms of the methods above. |
+| `HttpMethod`, `SignAlgorithm`, `SubResource`, `XiaomiHeader` | Constant maps with literal union types. |
+| `GalaxyFDSSignerError` | The only error type thrown or rejected. The underlying error, if any, is in `cause`. |
+
+`SignerOptions`: `accessId`, `accessSecret`, `algorithm` (`HmacSHA1` default, `HmacSHA256`, `HmacMD5`). For addressing, use either `endpoint` / `regionName` / `cdnEndpoint` / `enableHttps`, or explicit `baseUri` / `cdnBaseUri`. Endpoints on `*.mi-fds.com` use virtual-hosted addressing (`{bucket}.{endpoint}`). In that mode, bucket names must be valid DNS labels.
+
+`SignRequestInput`: `method`, then either `bucket` / `object` / `subResources` / `cdn` or `url`, plus `query`, `headers`, and `date`.
+
+`PresignInput`: `method`, `bucket`, `object`, `subResources`, `cdn`, `expires` or `expiresIn`, and `headers`.
+
+Header names are case-insensitive, and you can pass them as a plain object, a `Headers` instance or `[name, value]` pairs. Returned headers use lower-case names.
 
 ## How signing works
 
-The Galaxy-V2 signature is an HMAC over a canonical string built from the request:
+The Galaxy-V2 signature is an HMAC over:
 
 ```
-{HTTP-METHOD}\n
-{content-md5}\n
-{content-type}\n
-{date or Expires}\n
-{canonicalized x-xiaomi-* headers}
-{canonicalized resource}
+{METHOD}\n{content-md5}\n{content-type}\n{date, or Expires for pre-signed URLs}\n
+{sorted x-xiaomi-* headers as name:value\n}{decoded path}{?sorted sub-resources}
 ```
 
-- If the URI carries an `Expires` query parameter (pre-signed URIs), that value is used in place of the date line.
-- If an `x-xiaomi-date` header is present, the standard `date` line is left empty.
-- Only the recognized sub-resources (`acl`, `quota`, `uploads`, `partNumber`, `uploadId`, `storageAccessToken`, `compression`, `metadata`) participate in the canonicalized resource.
-
-The HMAC result is Base64-encoded and combined into `Galaxy-V2 {accessId}:{signature}`.
+Only the recognized sub-resources (`acl`, `quota`, `uploads`, `partNumber`, `uploadId`, `storageAccessToken`, `compression`, `metadata`) are part of the signature. When `x-xiaomi-date` is present, the `date` line is left empty. The path and query are percent-decoded the same way `java.net.URI` decodes them.
 
 ## Development
 
 ```bash
 npm install
-npm run build       # bundle ESM + CJS + .d.ts into dist/
-npm test            # run the Vitest suite
-npm run typecheck
+npm run typecheck   # also checks src against Web APIs only (tsconfig.web.json)
 npm run lint
+npm test            # includes Vercel Edge (edge-runtime) and Cloudflare (workerd) runs
+npm run build
 ```
 
-### Golden parity tests
-
-`test/golden.test.ts` and `test/utils.test.ts` pin a set of representative
-cases against the output of the official `galaxy-fds-sdk-java` 3.0.48 so the
-Node.js implementation can be checked for exact parity. The expected values are
-hard-coded in the test files — there is no external generation step. If you
-change signing behavior, re-derive the affected expected values from the Java
-SDK and update them inline.
+The expected values in `test/golden.test.ts` and `test/api.test.ts` were produced by the official `galaxy-fds-sdk-java` (3.0.37, and 3.0.48 for the original cases). They are hard-coded in the tests. If you change signing behavior, regenerate the affected values from the Java SDK.
 
 ## License
 
-[Apache License 2.0](./LICENSE).
-
-This project is an independent port and is not an official Xiaomi release.
+[Apache License 2.0](./LICENSE). This is an independent port, not an official Xiaomi release.

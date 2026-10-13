@@ -32,12 +32,16 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      # Includes tsconfig.web.json: src must compile without @types/node.
       - name: Typecheck
         run: npm run typecheck
 
       - name: Lint
         run: npm run lint
 
+      # Includes test/runtimes.test.ts, which runs the bundle inside
+      # @edge-runtime/vm (Vercel Edge) and workerd via Miniflare
+      # (Cloudflare Workers).
       - name: Test
         run: npm test
 

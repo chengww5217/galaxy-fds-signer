@@ -38,7 +38,8 @@ interface PresignCase {
   expected: { uri: string };
 }
 
-// Representative cases pinned against galaxy-fds-sdk-java 3.0.48 output.
+// Representative cases pinned against galaxy-fds-sdk-java output (originally
+// captured from 3.0.48; all re-verified, and the newer cases produced, with 3.0.37).
 // Each one exercises a distinct facet of the signing rules; the expected
 // values were captured from the reference Java SDK and are intentionally
 // hard-coded so the suite has no external generation step.
@@ -360,7 +361,7 @@ function toHeaders(entries?: Array<[string, string]>): HeaderMultiMap | undefine
   return map;
 }
 
-describe('signing — golden parity with galaxy-fds-sdk-java 3.0.48', () => {
+describe('signing — golden parity with galaxy-fds-sdk-java', () => {
   for (const c of SIGN_CASES) {
     describe(c.name, () => {
       const headers = toHeaders(c.headers);
@@ -402,7 +403,7 @@ describe('signing — golden parity with galaxy-fds-sdk-java 3.0.48', () => {
   }
 });
 
-describe('pre-signed URI — golden parity with galaxy-fds-sdk-java 3.0.48', () => {
+describe('pre-signed URI — golden parity with galaxy-fds-sdk-java', () => {
   for (const c of PRESIGN_CASES) {
     it(c.name, async () => {
       const actual = await Signer.generatePresignedUri({
