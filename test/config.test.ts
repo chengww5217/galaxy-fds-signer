@@ -2,11 +2,11 @@ import { describe, expect, it } from 'vitest';
 
 import {
   BasicFDSCredential,
-  Common,
   FDSEndpointConfiguration,
   GalaxyFDSSigner,
   GalaxyFDSSignerError,
 } from '../src/index.js';
+import { Common } from '../src/common.js';
 
 const ACCESS_ID = 'AKIDEXAMPLEACCESSID';
 const ACCESS_SECRET = 'wJalrXUtnFEMIK7MDENGbPxRfiCYEXAMPLEKEY';

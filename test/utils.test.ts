@@ -1,13 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
-import {
-  calcMD5,
-  encodeUriPath,
-  getGMTDatetime,
-  parseUri,
-  parseUriParameters,
-  urlEncode,
-} from '../src/index.js';
+import { calcMD5, getGMTDatetime, urlEncode } from '../src/index.js';
+import { encodeUriPath, parseUri, parseUriParameters } from '../src/auth/utils.js';
 
 // Expected values captured from galaxy-fds-sdk-java 3.0.48.
 const MD5_CASES: Array<{ input: string; expected: string }> = [

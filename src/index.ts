@@ -1,42 +1,19 @@
 /**
- * Galaxy FDS Node.js signer.
+ * Galaxy FDS signer.
  *
  * Provides Galaxy-V2 request signing and pre-signed URI generation, ported from
  * the official Xiaomi `galaxy-fds-sdk-java`.
  */
 
-export { Common, GALAXY_V2_PREFIX, MULTIPART_FORM_DATA } from './common.js';
-export {
-  HttpMethod,
-  SignAlgorithm,
-  SubResource,
-  XiaomiHeader,
-  SIGN_ALGORITHM_DIGEST,
-  SUB_RESOURCE_SET,
-} from './enums.js';
+export { HttpMethod, SignAlgorithm, SubResource, XiaomiHeader } from './enums.js';
 export { GalaxyFDSSignerError } from './errors.js';
 export {
   type GalaxyFDSCredential,
   type CredentialObject,
   type CredentialInput,
   BasicFDSCredential,
-  toGalaxyFDSCredential,
 } from './credential.js';
-export {
-  Signer,
-  type HttpHeaders,
-  constructStringToSign,
-  canonicalizeXiaomiHeaders,
-  canonicalizeResource,
-} from './auth/signer.js';
-export {
-  parseUri,
-  type UriParts,
-  parseUriParameters,
-  getGMTDatetime,
-  urlEncode,
-  encodeUriPath,
-  calcMD5,
-} from './auth/utils.js';
+export { Signer, type HttpHeaders, constructStringToSign } from './auth/signer.js';
+export { getGMTDatetime, urlEncode, calcMD5 } from './auth/utils.js';
 export { GalaxyFDSSigner, type GalaxyFDSSignerOptions, type PresignOptions } from './fds-signer.js';
 export { FDSEndpointConfiguration, type FDSEndpointOptions } from './config.js';

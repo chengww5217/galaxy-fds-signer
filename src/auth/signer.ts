@@ -22,10 +22,7 @@ import { encodeUriPath, parseUri, parseUriParameters, urlEncode } from './utils.
  * `content-type` are the same header.
  */
 export type HttpHeaders =
-  | Record<string, string | string[]>
-  | Iterable<readonly [string, string]>
-  | Headers
-  | HeaderMultiMap;
+  Record<string, string | string[]> | Iterable<readonly [string, string]> | Headers;
 
 /**
  * Ordered, multi-valued header container. Names are normalized to lower case
@@ -35,8 +32,12 @@ export type HttpHeaders =
  * recognizes lower-case names; for lower-case input the two behave
  * identically, while mixed-case input no longer silently drops headers.
  */
-export class HeaderMultiMap {
+export class HeaderMultiMap implements Iterable<[string, string]> {
   private readonly entriesList: Array<[string, string]> = [];
+
+  [Symbol.iterator](): Iterator<[string, string]> {
+    return this.entriesList[Symbol.iterator]();
+  }
 
   /** Builds a multimap from any supported headers shape. */
   static from(headers?: HttpHeaders): HeaderMultiMap {
