@@ -238,6 +238,7 @@ class GalaxyFDSSignerError extends Error {
 | `INVALID_BUCKET` | input | `bucket` | A missing `bucket` for `presign`, or for `object` / `subResources`; a bucket containing `/`; a bucket that is not a DNS label on a `*.mi-fds.com` endpoint |
 | `INVALID_OBJECT` | input | `object` | `object` is not a string |
 | `INVALID_SUB_RESOURCE` | input | `subResources` | A sub-resource name not in the list above, or a value that is not a string, number or boolean |
+| `INVALID_QUERY` | input | `query` | `query` is not an object, or a value is not a string or number |
 | `INVALID_URL` | input | `url` | An empty, relative or malformed `url`, or `url` combined with `bucket` / `object` / `subResources` / `cdn` / `query` |
 | `INVALID_DATE` | input | `date` | `date` is not a valid `Date` |
 | `INVALID_EXPIRATION` | input | `expires`, `expiresIn` | An expiration that is not an integer, is in seconds instead of milliseconds, or is in the past; `expiresIn <= 0` |

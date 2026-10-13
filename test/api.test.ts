@@ -192,6 +192,8 @@ describe('signRequest', () => {
     ['malformed header pairs', { headers: [['a']] }],
     ['a non-string object name', { bucket: 'b', object: 5 }],
     ['a non-scalar sub-resource value', { bucket: 'b', subResources: { uploadId: {} } }],
+    ['a non-object query', { bucket: 'b', query: 'a=1' }],
+    ['a non-scalar query value', { bucket: 'b', query: { a: {} } }],
     ['no input', undefined],
   ])('rejects %s', async (_name, input) => {
     await expect(signer.signRequest(input as never)).rejects.toThrow(GalaxyFDSSignerError);

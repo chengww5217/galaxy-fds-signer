@@ -23,6 +23,7 @@ const CODE_KINDS = {
   INVALID_BUCKET: 'input',
   INVALID_OBJECT: 'input',
   INVALID_SUB_RESOURCE: 'input',
+  INVALID_QUERY: 'input',
   INVALID_URL: 'input',
   INVALID_DATE: 'input',
   INVALID_EXPIRATION: 'input',

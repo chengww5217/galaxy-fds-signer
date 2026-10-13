@@ -292,6 +292,20 @@ describe('error codes', () => {
       () => signer.presign({ bucket: 'b', subResources: { uploadId: {} as never } }),
     ],
     [
+      'INVALID_QUERY',
+      'input',
+      'query',
+      'non-object query',
+      () => signer.signRequest({ bucket: 'b', query: 'a=1' as never }),
+    ],
+    [
+      'INVALID_QUERY',
+      'input',
+      'query',
+      'non-scalar query value',
+      () => signer.signRequest({ bucket: 'b', query: { a: {} as never } }),
+    ],
+    [
       'INVALID_URL',
       'input',
       'url',

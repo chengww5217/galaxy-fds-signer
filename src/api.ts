@@ -192,9 +192,7 @@ export function createSigner(options: SignerOptions): FdsSigner {
     requireInput(input, 'signRequest');
     const method = toHttpMethod(input.method ?? HttpMethod.GET);
     const headers = toHeaderRecord(input.headers);
-    const extraQuery = Object.entries(input.query ?? {}).map(
-      ([k, v]) => `${urlEncode(k)}=${urlEncode(String(v))}`,
-    );
+    const extraQuery = toQueryParams(input.query);
 
     let url: string;
     if (input.url !== undefined) {
@@ -374,6 +372,38 @@ function assertDnsLabel(bucket: string, code: GalaxyFDSSignerErrorCode): void {
       { field: 'bucket' },
     );
   }
+}
+
+/**
+ * Validates and renders the unsigned extra query parameters (`?prefix=…`).
+ * Rejects anything but a `Record<string, string | number>`: `Object.entries` on
+ * a malformed value (a string, say) would otherwise silently produce a bogus
+ * URL instead of an error.
+ */
+function toQueryParams(query: unknown): string[] {
+  if (query === undefined) {
+    return [];
+  }
+  if (query === null || typeof query !== 'object' || Array.isArray(query)) {
+    throw new GalaxyFDSSignerError(
+      'INVALID_QUERY',
+      'query must be an object of string or number values',
+      { field: 'query' },
+    );
+  }
+  const params: string[] = [];
+  for (const [key, value] of Object.entries(query)) {
+    if (typeof value !== 'string' && typeof value !== 'number') {
+      throw new GalaxyFDSSignerError(
+        'INVALID_QUERY',
+        `invalid value for query parameter ${JSON.stringify(key)}: ` +
+          'expected a string or number',
+        { field: 'query' },
+      );
+    }
+    params.push(`${urlEncode(key)}=${urlEncode(String(value))}`);
+  }
+  return params;
 }
 
 /**
