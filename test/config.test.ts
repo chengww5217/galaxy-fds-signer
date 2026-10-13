@@ -1,16 +1,8 @@
 import { describe, expect, it } from 'vitest';
 
-import {
-  BasicFDSCredential,
-  FDSEndpointConfiguration,
-  GalaxyFDSSigner,
-  GalaxyFDSSignerError,
-} from '../src/index.js';
 import { Common } from '../src/common.js';
-
-const ACCESS_ID = 'AKIDEXAMPLEACCESSID';
-const ACCESS_SECRET = 'wJalrXUtnFEMIK7MDENGbPxRfiCYEXAMPLEKEY';
-const FUTURE = 4102444800000; // 2100-01-01
+import { FDSEndpointConfiguration } from '../src/config.js';
+import { GalaxyFDSSignerError } from '../src/index.js';
 
 describe('FDSEndpointConfiguration defaults', () => {
   it('falls back to the built-in base URIs', () => {
@@ -102,26 +94,5 @@ describe('FDSEndpointConfiguration explicit base URIs', () => {
     });
     expect(config.getBaseUri()).toBe('http://custom.internal/');
     expect(config.getCdnBaseUri()).toBe('http://custom-cdn.internal/');
-  });
-});
-
-describe('GalaxyFDSSigner endpoint options', () => {
-  const credential = new BasicFDSCredential(ACCESS_ID, ACCESS_SECRET);
-
-  it('uses the endpoint-derived base URI for pre-signed URIs', async () => {
-    const client = new GalaxyFDSSigner(credential, { endpoint: 'files.fds.api.xiaomi.com' });
-    const uri = await client.generatePresignedUri('my-bucket', 'my-object', FUTURE);
-    expect(uri.startsWith('https://files.fds.api.xiaomi.com/my-bucket/my-object?')).toBe(true);
-  });
-
-  it('still defaults to the built-in base URI without endpoint options', async () => {
-    const client = new GalaxyFDSSigner(credential);
-    const uri = await client.generatePresignedUri('my-bucket', 'my-object', FUTURE);
-    expect(uri.startsWith(Common.DEFAULT_FDS_SERVICE_BASE_URI)).toBe(true);
-  });
-
-  it('exposes the resolved configuration', () => {
-    const client = new GalaxyFDSSigner(credential, { endpoint: 'files.fds.api.xiaomi.com' });
-    expect(client.getConfig().getBaseUri()).toBe('https://files.fds.api.xiaomi.com/');
   });
 });

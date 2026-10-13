@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
-import { HeaderMultiMap } from '../src/auth/signer.js';
-import { GalaxyFDSSignerError, HttpMethod, Signer, type SubResources } from '../src/index.js';
+import { HeaderMultiMap, Signer, type SubResources } from '../src/auth/signer.js';
+import { GalaxyFDSSignerError, HttpMethod } from '../src/index.js';
 
 const ACCESS_ID = 'AKIDEXAMPLEACCESSID';
 const ACCESS_SECRET = 'wJalrXUtnFEMIK7MDENGbPxRfiCYEXAMPLEKEY';

@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
-import { GalaxyFDSSigner, GalaxyFDSSignerError, Signer } from '../src/index.js';
+import { Signer } from '../src/auth/signer.js';
+import { createSigner, GalaxyFDSSignerError } from '../src/index.js';
 
 describe('GalaxyFDSSignerError', () => {
   it('carries message, name and cause', () => {
@@ -43,7 +44,7 @@ describe('error normalization', () => {
     ],
     [
       'an invalid baseUri option',
-      () => new GalaxyFDSSigner({ accessId: 'id', accessSecret: 's' }, { baseUri: 'nope' }),
+      () => createSigner({ accessId: 'id', accessSecret: 's', baseUri: 'nope' }),
     ],
   ])('throws GalaxyFDSSignerError for %s', async (_name, fn) => {
     // Covers both synchronous throws (constructors) and rejected promises.

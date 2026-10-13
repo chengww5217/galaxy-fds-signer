@@ -23,38 +23,41 @@ type Lib = typeof lib;
  * Exercises signing and pre-signing with every algorithm. Must be
  * self-contained: it is serialized and evaluated inside each runtime.
  */
-async function probe(api: Lib): Promise<Record<string, string>> {
-  const id = 'AKIDEXAMPLEACCESSID';
-  const secret = 'wJalrXUtnFEMIK7MDENGbPxRfiCYEXAMPLEKEY';
-  const uri = 'http://files.fds.api.xiaomi.com/my-bucket/中文 object?uploadId=a%2Fb&acl';
-  const headers = {
-    Date: 'Sun, 06 Nov 1994 08:49:37 GMT',
-    'Content-Type': 'image/png',
-    'X-Xiaomi-Meta-Foo': ['a', 'b'],
+async function probe(api: Lib): Promise<Record<string, unknown>> {
+  const options = {
+    accessId: 'AKIDEXAMPLEACCESSID',
+    accessSecret: 'wJalrXUtnFEMIK7MDENGbPxRfiCYEXAMPLEKEY',
+    endpoint: 'cnbj1.fds.api.xiaomi.com',
   };
-  const out: Record<string, string> = {};
+  const date = new Date('1994-11-06T08:49:37Z');
+  const out: Record<string, unknown> = {};
   for (const algorithm of Object.values(api.SignAlgorithm)) {
-    out[algorithm] = await api.Signer.getAuthorizationHeader(
-      'PUT',
-      uri,
-      headers,
-      id,
-      secret,
-      algorithm,
+    out[algorithm] = await api.signRequest(
+      { ...options, algorithm },
+      {
+        method: 'PUT',
+        bucket: 'my-bucket',
+        object: 'dir/中文 object',
+        subResources: { uploadId: 'a/b', partNumber: 2 },
+        headers: { 'Content-Type': 'image/png', 'X-Xiaomi-Meta-Foo': 'a' },
+        date,
+      },
     );
   }
-  const signer = new api.GalaxyFDSSigner({ accessId: id, accessSecret: secret });
-  out.presign = await signer.generatePresignedUri('my-bucket', 'path/中文.txt', 4102444800000, {
+  out.presign = await api.createSigner(options).presign({
     method: 'PUT',
+    bucket: 'my-bucket',
+    object: 'path/中文.txt',
     subResources: { uploadId: 'x y', partNumber: 3 },
-    contentType: 'text/plain',
+    headers: { 'content-type': 'text/plain' },
+    expires: 4102444800000,
   });
   return out;
 }
 
 let esm = '';
 let iife = '';
-let expected: Record<string, string>;
+let expected: Record<string, unknown>;
 
 beforeAll(async () => {
   const outputs = (await build({
@@ -106,7 +109,7 @@ describe('runtime portability', () => {
     });
     try {
       const response = await mf.dispatchFetch('http://localhost/');
-      const body = (await response.json()) as { buffer: string; result: Record<string, string> };
+      const body = (await response.json()) as { buffer: string; result: Record<string, unknown> };
       expect(body.buffer).toBe('undefined');
       expect(body.result).toEqual(expected);
     } finally {

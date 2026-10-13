@@ -3,7 +3,7 @@ import { Common } from './common.js';
 import { GalaxyFDSSignerError } from './errors.js';
 
 /**
- * Endpoint configuration for a {@link GalaxyFDSSigner}.
+ * Endpoint configuration for a {@link createSigner}.
  *
  * Ported from the URI-relevant subset of the Java SDK's
  * `com.xiaomi.infra.galaxy.fds.client.FDSClientConfiguration`. Only the
@@ -47,7 +47,7 @@ const URI_HOST_STYLE_COM_SUFFIX = '.mi-fds.com';
 const URI_CDN_SUFFIX = '.fds.api.mi-img.com';
 
 /**
- * Resolves the base URIs and addressing style used by {@link GalaxyFDSSigner}.
+ * Resolves the base URIs and addressing style used by {@link createSigner}.
  *
  * @see FDSEndpointOptions
  */

@@ -1,15 +1,12 @@
 import { describe, expect, it } from 'vitest';
 
-import { HeaderMultiMap } from '../src/auth/signer.js';
 import {
   constructStringToSign,
-  GalaxyFDSSignerError,
-  HttpMethod,
-  SignAlgorithm,
+  HeaderMultiMap,
   Signer,
-  SubResource,
   type SubResources,
-} from '../src/index.js';
+} from '../src/auth/signer.js';
+import { GalaxyFDSSignerError, HttpMethod, SignAlgorithm, SubResource } from '../src/index.js';
 
 const ACCESS_ID = 'AKIDEXAMPLEACCESSID';
 const ACCESS_SECRET = 'wJalrXUtnFEMIK7MDENGbPxRfiCYEXAMPLEKEY';
