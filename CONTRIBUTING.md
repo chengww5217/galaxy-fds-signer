@@ -45,7 +45,7 @@ CI.
 Releases are cut from `main` with a single command:
 
 ```bash
-npm run release -- current   # first release: publish package.json as-is (0.1.0)
+npm run release -- current   # first release: package.json as-is (0.1.0)
 npm run release -- patch     # later releases: 0.1.0 -> 0.1.1 (or minor / major)
 ```
 
@@ -67,13 +67,26 @@ git push --follow-tags
 gh release create vX.Y.Z --generate-notes
 ```
 
-The very first version cannot be published by CI: npm requires the package to
-exist before a trusted publisher can be configured for it (npm/cli#8544), so
-`0.1.0` was published manually (`npm login && npm publish`) and the workflow
-skips it via the published-version check. On npmjs.com → the package →
-Settings → Trusted publishing → GitHub Actions, point a trusted publisher at
-this repository and `release.yml`, and make sure a publish succeeds within 2
-days: an unvalidated configuration expires.
+### First release
+
+The package is not on npm yet, and the first version cannot be published by
+CI: npm only allows a trusted publisher (OIDC) to be configured for a package
+that already exists (npm/cli#8544). `npm run release -- current` handles this:
+while the package is not on the registry, it runs `npm publish` from your
+machine (after `npm ci` and `npm run verify`), then tags and creates the GitHub
+Release; `release.yml` finds the version on the registry and skips it. Any
+other mode refuses to run until then.
+
+1. `npm login` (the account needs publish rights and 2FA).
+2. `npm run release -- current`.
+3. On npmjs.com → the package → Settings → Trusted publishing → GitHub Actions,
+   add a trusted publisher for this repository and `release.yml`.
+
+From then on every release is published by `release.yml` only. That first
+version is published without a provenance attestation, since provenance needs
+a CI identity; later ones get it automatically. If the run fails after
+publishing, re-run `npm run release -- current`: it notices the version is
+already on npm and only tags and releases it.
 
 ## Reporting issues
 

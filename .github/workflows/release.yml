@@ -42,9 +42,10 @@ jobs:
 
       # A package's first version cannot be published via OIDC: npm needs the
       # package to exist before a trusted publisher can be configured
-      # (npm/cli#8544), so 0.1.0 was published manually. Skipping it here keeps
-      # that one release idempotent. Because the tag encodes the version, the
-      # check above means "already on the registry" can only be this version.
+      # (npm/cli#8544). `npm run release -- current` therefore publishes the
+      # first version from the maintainer's machine before tagging it, and this
+      # step skips it. Because the tag encodes the version, the check above
+      # means "already on the registry" can only be that version.
       - name: Check published version
         id: version
         run: |
