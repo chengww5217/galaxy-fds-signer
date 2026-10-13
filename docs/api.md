@@ -147,7 +147,7 @@ function signRequest(options: SignerOptions, input: SignRequestInput): Promise<S
 function presign(options: SignerOptions, input: PresignInput): Promise<PresignedRequest>;
 ```
 
-They are the same as `createSigner(options).signRequest(input)` and `createSigner(options).presign(input)`, but configuration errors reject the promise instead of throwing.
+They are the same as `createSigner(options).signRequest(input)` and `createSigner(options).presign(input)`, but configuration errors reject the promise instead of throwing. A signer imports its HMAC key once and reuses it for every request, which roughly halves the cost of a signature; the helpers build a new signer per call, so prefer one `createSigner` when signing repeatedly.
 
 ## Headers
 

@@ -22,6 +22,7 @@ import {
   type SubResources,
   toExpiresMillis,
 } from './auth/signer.js';
+import { createHmac } from './auth/crypto.js';
 import { buildResourceUri, isWellFormed, urlEncode } from './auth/utils.js';
 
 /** Configuration shared by every request signed with {@link createSigner}. */
@@ -178,6 +179,9 @@ export function createSigner(options: SignerOptions): FdsSigner {
   const accessId = requireString(options.accessId, 'accessId', 'INVALID_CREDENTIALS');
   const accessSecret = requireString(options.accessSecret, 'accessSecret', 'INVALID_CREDENTIALS');
   const algorithm = toSignAlgorithm(options.algorithm ?? SignAlgorithm.HmacSHA1);
+  // One keyed HMAC per signer: the Web Crypto key is imported on first use and
+  // reused by every later request, and is released with the signer.
+  const mac = createHmac(algorithm, accessSecret);
   const config = new FDSEndpointConfiguration(options);
   // Fail fast on a bad default bucket rather than on the first request that uses it.
   const defaultBucket = resolveDefaultBucket(options.bucket, config);
@@ -246,14 +250,7 @@ export function createSigner(options: SignerOptions): FdsSigner {
       headers[XiaomiHeader.DATE] = date.toUTCString();
     }
 
-    const authorization = await Signer.getAuthorizationHeader(
-      method,
-      url,
-      headers,
-      accessId,
-      accessSecret,
-      algorithm,
-    );
+    const authorization = await Signer.getAuthorizationHeader(method, url, headers, accessId, mac);
     return { url, method, headers: { ...headers, authorization } };
   }
 
@@ -275,8 +272,7 @@ export function createSigner(options: SignerOptions): FdsSigner {
       expiration: expiresAt,
       method,
       accessId,
-      accessSecret,
-      algorithm,
+      accessSecret: mac,
       headers,
     });
     return { url, method, headers, expiresAt };

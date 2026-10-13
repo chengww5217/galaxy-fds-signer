@@ -9,7 +9,7 @@ import {
   XiaomiHeader,
 } from '../enums.js';
 import { GalaxyFDSSignerError, requireString, wrapErrors, wrapErrorsAsync } from '../errors.js';
-import { hmac, toBase64 } from './crypto.js';
+import { createHmac, type Hmac, toBase64 } from './crypto.js';
 import {
   buildResourceUri,
   isWellFormed,
@@ -212,6 +212,12 @@ export function formatSubResources(subResources: SubResources | undefined): stri
   return parts;
 }
 
+/**
+ * The secret to sign with: the access secret itself, or a keyed {@link Hmac}
+ * from {@link createHmac} that reuses its imported key across signatures.
+ */
+export type SigningSecret = string | Hmac;
+
 /** Parameters of {@link Signer.generatePresignedUri}. */
 export interface PresignUriInput {
   /** The service base URI, e.g. `http://files.fds.api.xiaomi.com/`. */
@@ -228,8 +234,8 @@ export interface PresignUriInput {
   method?: HttpMethod;
   /** The access key id. */
   accessId: string;
-  /** The secret access key. */
-  accessSecret: string;
+  /** The secret access key, or a keyed {@link Hmac} (see {@link Signer.sign}). */
+  accessSecret: SigningSecret;
   /** The signature algorithm (defaults to HmacSHA1). */
   algorithm?: SignAlgorithm;
   /** Optional headers participating in the signature (content-type / content-md5). */
@@ -245,20 +251,28 @@ export const Signer = {
   /**
    * Signs the request and returns the raw signature bytes.
    *
+   * `accessSecret` is either the secret itself or a keyed {@link Hmac} from
+   * {@link createHmac}, which reuses its imported key across calls and carries
+   * its own algorithm (`algorithm` is then ignored).
+   *
    * @see {@link signToBase64} for the Base64-encoded variant.
    */
   sign(
     httpMethod: HttpMethod,
     uri: string,
     httpHeaders: HttpHeaders | undefined,
-    accessSecret: string,
+    accessSecret: SigningSecret,
     algorithm: SignAlgorithm = SignAlgorithm.HmacSHA1,
   ): Promise<Uint8Array> {
     return wrapErrorsAsync('SIGNING_FAILED', 'failed to sign request', () => {
-      requireString(accessSecret, 'accessSecret', 'INVALID_CREDENTIALS');
-      const alg = toSignAlgorithm(algorithm);
-      const stringToSign = constructStringToSign(httpMethod, uri, httpHeaders);
-      return hmac(alg, accessSecret, stringToSign);
+      let mac: Hmac;
+      if (typeof accessSecret === 'function') {
+        mac = accessSecret;
+      } else {
+        const secret = requireString(accessSecret, 'accessSecret', 'INVALID_CREDENTIALS');
+        mac = createHmac(toSignAlgorithm(algorithm), secret);
+      }
+      return mac(constructStringToSign(httpMethod, uri, httpHeaders));
     });
   },
 
@@ -267,7 +281,7 @@ export const Signer = {
     httpMethod: HttpMethod,
     uri: string,
     httpHeaders: HttpHeaders | undefined,
-    accessSecret: string,
+    accessSecret: SigningSecret,
     algorithm: SignAlgorithm = SignAlgorithm.HmacSHA1,
   ): Promise<string> {
     return toBase64(await Signer.sign(httpMethod, uri, httpHeaders, accessSecret, algorithm));
@@ -287,7 +301,7 @@ export const Signer = {
     uri: string,
     httpHeaders: HttpHeaders | undefined,
     accessKeyId: string,
-    accessSecret: string,
+    accessSecret: SigningSecret,
     algorithm: SignAlgorithm = SignAlgorithm.HmacSHA1,
   ): Promise<string> {
     requireString(accessKeyId, 'accessId', 'INVALID_CREDENTIALS');

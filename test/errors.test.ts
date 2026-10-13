@@ -412,7 +412,8 @@ describe('error codes', () => {
             importKey: () => Promise.reject(new Error('boom')),
           },
         });
-        return signer.signRequest({ bucket: 'b' });
+        // A fresh signer: the shared one may already hold an imported key.
+        return createSigner(OPTIONS).signRequest({ bucket: 'b' });
       },
     ],
   ];
@@ -430,7 +431,7 @@ describe('error codes', () => {
 
   it('wraps unexpected errors with their cause', async () => {
     vi.stubGlobal('crypto', { subtle: { importKey: () => Promise.reject(new Error('boom')) } });
-    const err = await catchError(() => signer.signRequest({ bucket: 'b' }));
+    const err = await catchError(() => createSigner(OPTIONS).signRequest({ bucket: 'b' }));
     expect(err.message).toBe('failed to sign request: boom');
     expect((err.cause as Error).message).toBe('boom');
   });

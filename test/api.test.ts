@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 
 import {
   createSigner,
@@ -359,5 +359,23 @@ describe('createSigner', () => {
   it('works when methods are destructured', async () => {
     const { signRequest: sign } = signer;
     await expect(sign({ bucket: 'b' })).resolves.toHaveProperty('url');
+  });
+});
+
+describe('HMAC key reuse', () => {
+  it('a signer imports its key once, across signRequest and presign', async () => {
+    const spy = vi.spyOn(globalThis.crypto.subtle, 'importKey');
+    try {
+      const s = createSigner({ ...OPTIONS, accessSecret: 'reuse-secret' });
+      await s.signRequest({ bucket: 'b', date: DATE });
+      await s.presign({ bucket: 'b', expires: FUTURE });
+      await s.signRequest({ bucket: 'b', object: 'o', date: DATE });
+      expect(spy).toHaveBeenCalledTimes(1);
+      // Another signer with the same secret shares nothing.
+      await createSigner({ ...OPTIONS, accessSecret: 'reuse-secret' }).signRequest({ bucket: 'b' });
+      expect(spy).toHaveBeenCalledTimes(2);
+    } finally {
+      spy.mockRestore();
+    }
   });
 });
