@@ -391,18 +391,18 @@ describe('signing — golden parity with galaxy-fds-sdk-java 3.0.48', () => {
 describe('pre-signed URI — golden parity with galaxy-fds-sdk-java 3.0.48', () => {
   for (const c of PRESIGN_CASES) {
     it(c.name, () => {
-      const actual = Signer.generatePresignedUri(
-        c.baseUri,
-        c.bucketName,
-        c.objectName,
-        c.subResources,
-        c.expiresMillis,
-        c.httpMethod,
-        ACCESS_ID,
-        ACCESS_SECRET,
-        c.algorithm,
-        toHeaders(c.headers),
-      );
+      const actual = Signer.generatePresignedUri({
+        baseUri: c.baseUri,
+        bucketName: c.bucketName,
+        objectName: c.objectName,
+        subResources: c.subResources,
+        expiration: c.expiresMillis,
+        method: c.httpMethod,
+        accessId: ACCESS_ID,
+        accessSecret: ACCESS_SECRET,
+        algorithm: c.algorithm,
+        headers: toHeaders(c.headers),
+      });
       expect(actual).toBe(c.expected.uri);
     });
   }

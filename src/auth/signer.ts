@@ -103,6 +103,30 @@ function isIterable(value: object): value is Iterable<readonly [string, string]>
   return typeof (value as { [Symbol.iterator]?: unknown })[Symbol.iterator] === 'function';
 }
 
+/** Parameters of {@link Signer.generatePresignedUri}. */
+export interface PresignUriInput {
+  /** The service base URI, e.g. `http://files.fds.api.xiaomi.com/`. */
+  baseUri: string;
+  /** The bucket name. */
+  bucketName: string;
+  /** The object name; omit or leave empty for bucket-level resources. */
+  objectName?: string;
+  /** Sub-resource query fragments (e.g. `["acl"]`). */
+  subResources?: string[];
+  /** Expiration time; a `Date` or epoch milliseconds. */
+  expiration: Date | number;
+  /** The HTTP method the URI will be used with (defaults to GET). */
+  method?: HttpMethod;
+  /** The access key id. */
+  accessId: string;
+  /** The secret access key. */
+  accessSecret: string;
+  /** The signature algorithm (defaults to HmacSHA1). */
+  algorithm?: SignAlgorithm;
+  /** Optional headers participating in the signature (content-type / content-md5). */
+  headers?: HttpHeaders;
+}
+
 /**
  * Signs Galaxy FDS requests and builds pre-signed URIs.
  *
@@ -174,29 +198,20 @@ export const Signer = {
   /**
    * Generates a pre-signed URI granting temporary access to a resource.
    *
-   * @param baseUri      The service base URI, e.g. `http://files.fds.api.xiaomi.com/`.
-   * @param bucketName   The bucket name.
-   * @param objectName   The object name, or empty for bucket-level resources.
-   * @param subResources Sub-resource query fragments (e.g. `["acl"]`); may be empty or `undefined`.
-   * @param expiration   Expiration time; a `Date` or epoch milliseconds.
-   * @param httpMethod   The HTTP method the URI will be used with.
-   * @param accessId     The access key id.
-   * @param accessSecret The secret access key.
-   * @param algorithm    The signature algorithm (defaults to HmacSHA1).
-   * @param httpHeaders  Optional headers participating in the signature.
+   * @see {@link PresignUriInput} for the parameters.
    */
-  generatePresignedUri(
-    baseUri: string,
-    bucketName: string,
-    objectName: string,
-    subResources: string[] | undefined,
-    expiration: Date | number,
-    httpMethod: HttpMethod,
-    accessId: string,
-    accessSecret: string,
-    algorithm: SignAlgorithm = SignAlgorithm.HmacSHA1,
-    httpHeaders?: HttpHeaders,
-  ): string {
+  generatePresignedUri({
+    baseUri,
+    bucketName,
+    objectName = '',
+    subResources,
+    expiration,
+    method = HttpMethod.GET,
+    accessId,
+    accessSecret,
+    algorithm = SignAlgorithm.HmacSHA1,
+    headers: httpHeaders,
+  }: PresignUriInput): string {
     if (typeof bucketName !== 'string' || bucketName.length === 0) {
       throw new GalaxyFDSSignerError('bucketName must be a non-empty string');
     }
@@ -221,7 +236,7 @@ export const Signer = {
       const encodedUri = `${base.protocol}//${base.hostname}${port}${path}?${query}`;
 
       const signature = Signer.signToBase64(
-        httpMethod,
+        method,
         encodedUri,
         httpHeaders,
         accessSecret,

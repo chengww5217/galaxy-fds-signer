@@ -20,10 +20,7 @@ export interface GalaxyFDSSignerOptions extends FDSEndpointOptions {
   signAlgorithm?: SignAlgorithm;
 }
 
-/**
- * Options for pre-signing, as an alternative to the positional parameters of
- * {@link GalaxyFDSSigner.generatePresignedUri}.
- */
+/** Options for {@link GalaxyFDSSigner.generatePresignedUri}. */
 export interface PresignOptions {
   /** The HTTP method the pre-signed URI will be used with (defaults to GET). */
   method?: HttpMethod;
@@ -93,48 +90,9 @@ export class GalaxyFDSSigner {
     bucketName: string,
     objectName: string,
     expiration: Date | number,
-    options?: PresignOptions,
-  ): string;
-  /**
-   * Generates a pre-signed URI for the given object (positional form).
-   *
-   * @param bucketName   The bucket name.
-   * @param objectName   The object name.
-   * @param expiration   Expiration time (`Date` or epoch milliseconds).
-   * @param httpMethod   The HTTP method (defaults to GET).
-   * @param subResources Optional sub-resource fragments (e.g. `["acl"]`).
-   * @param contentType  Optional content type included in the signature.
-   * @param contentMD5   Optional content-md5 included in the signature.
-   */
-  generatePresignedUri(
-    bucketName: string,
-    objectName: string,
-    expiration: Date | number,
-    httpMethod?: HttpMethod,
-    subResources?: Array<SubResource | string>,
-    contentType?: string,
-    contentMD5?: string,
-  ): string;
-  generatePresignedUri(
-    bucketName: string,
-    objectName: string,
-    expiration: Date | number,
-    optionsOrMethod: PresignOptions | HttpMethod = HttpMethod.GET,
-    subResources?: Array<SubResource | string>,
-    contentType?: string,
-    contentMD5?: string,
+    options: PresignOptions = {},
   ): string {
-    const resolved = resolvePresignOptions(optionsOrMethod, subResources, contentType, contentMD5);
-    return this.presign(
-      this.config.getBaseUri(),
-      bucketName,
-      objectName,
-      expiration,
-      resolved.method,
-      resolved.subResources,
-      resolved.contentType,
-      resolved.contentMD5,
-    );
+    return this.presign(this.config.getBaseUri(), bucketName, objectName, expiration, options);
   }
 
   /**
@@ -146,42 +104,9 @@ export class GalaxyFDSSigner {
     bucketName: string,
     objectName: string,
     expiration: Date | number,
-    options?: PresignOptions,
-  ): string;
-  /**
-   * Generates a pre-signed CDN URI for the given object (positional form).
-   *
-   * @see {@link generatePresignedUri}
-   */
-  generatePresignedCdnUri(
-    bucketName: string,
-    objectName: string,
-    expiration: Date | number,
-    httpMethod?: HttpMethod,
-    subResources?: Array<SubResource | string>,
-    contentType?: string,
-    contentMD5?: string,
-  ): string;
-  generatePresignedCdnUri(
-    bucketName: string,
-    objectName: string,
-    expiration: Date | number,
-    optionsOrMethod: PresignOptions | HttpMethod = HttpMethod.GET,
-    subResources?: Array<SubResource | string>,
-    contentType?: string,
-    contentMD5?: string,
+    options: PresignOptions = {},
   ): string {
-    const resolved = resolvePresignOptions(optionsOrMethod, subResources, contentType, contentMD5);
-    return this.presign(
-      this.config.getCdnBaseUri(),
-      bucketName,
-      objectName,
-      expiration,
-      resolved.method,
-      resolved.subResources,
-      resolved.contentType,
-      resolved.contentMD5,
-    );
+    return this.presign(this.config.getCdnBaseUri(), bucketName, objectName, expiration, options);
   }
 
   private presign(
@@ -189,10 +114,7 @@ export class GalaxyFDSSigner {
     bucketName: string,
     objectName: string,
     expiration: Date | number,
-    httpMethod: HttpMethod,
-    subResources: Array<SubResource | string>,
-    contentType?: string,
-    contentMD5?: string,
+    { method = HttpMethod.GET, subResources = [], contentType, contentMD5 }: PresignOptions,
   ): string {
     if (toExpiresMillis(expiration) <= Date.now()) {
       throw new GalaxyFDSSignerError('expiration must be in the future');
@@ -211,18 +133,18 @@ export class GalaxyFDSSigner {
 
     const subResourceNames = subResources.map((s) => s.toString());
 
-    return Signer.generatePresignedUri(
-      this.applyVirtualAddressing(baseUri, bucketName),
+    return Signer.generatePresignedUri({
+      baseUri: this.applyVirtualAddressing(baseUri, bucketName),
       bucketName,
       objectName,
-      subResourceNames,
+      subResources: subResourceNames,
       expiration,
-      httpMethod,
-      this.credential.getGalaxyAccessId(),
-      this.credential.getGalaxyAccessSecret(),
-      this.signAlgorithm,
+      method,
+      accessId: this.credential.getGalaxyAccessId(),
+      accessSecret: this.credential.getGalaxyAccessSecret(),
+      algorithm: this.signAlgorithm,
       headers,
-    );
+    });
   }
 
   /**
@@ -248,38 +170,4 @@ export class GalaxyFDSSigner {
     }
     return `${url.protocol}//${bucketName}.${url.host}/`;
   }
-}
-
-/** Fully-resolved pre-sign parameters, ready for the private presign helper. */
-interface ResolvedPresignOptions {
-  method: HttpMethod;
-  subResources: Array<SubResource | string>;
-  contentType?: string;
-  contentMD5?: string;
-}
-
-/**
- * Merges the two public call shapes (options object vs. positional
- * parameters) into one normalized structure.
- */
-function resolvePresignOptions(
-  optionsOrMethod: PresignOptions | HttpMethod,
-  subResources?: Array<SubResource | string>,
-  contentType?: string,
-  contentMD5?: string,
-): ResolvedPresignOptions {
-  if (typeof optionsOrMethod === 'object') {
-    return {
-      method: optionsOrMethod.method ?? HttpMethod.GET,
-      subResources: optionsOrMethod.subResources ?? [],
-      contentType: optionsOrMethod.contentType,
-      contentMD5: optionsOrMethod.contentMD5,
-    };
-  }
-  return {
-    method: optionsOrMethod ?? HttpMethod.GET,
-    subResources: subResources ?? [],
-    contentType,
-    contentMD5,
-  };
 }

@@ -52,7 +52,7 @@ describe('GalaxyFDSSigner', () => {
 
   it('includes a SubResource fragment in the pre-signed URI', () => {
     const client = newClient();
-    const uri = client.generatePresignedUri('b', 'o', FUTURE, HttpMethod.GET, [SubResource.ACL]);
+    const uri = client.generatePresignedUri('b', 'o', FUTURE, { subResources: [SubResource.ACL] });
     expect(uri).toContain('/b/o?acl&');
   });
 
@@ -94,43 +94,21 @@ describe('GalaxyFDSSigner', () => {
     expect(() => new GalaxyFDSSigner({ accessId: ACCESS_ID } as never)).toThrow('credential');
   });
 
-  it('supports an options object equivalent to the positional form', () => {
-    const client = newClient();
-    const viaOptions = client.generatePresignedUri('b', 'o', FUTURE, {
-      method: HttpMethod.PUT,
-      contentType: 'image/png',
-      contentMD5: '1B2M2Y8AsgTpgAmY7PhCfg==',
-    });
-    const viaPositional = client.generatePresignedUri(
-      'b',
-      'o',
-      FUTURE,
-      HttpMethod.PUT,
-      [],
-      'image/png',
-      '1B2M2Y8AsgTpgAmY7PhCfg==',
-    );
-    expect(viaOptions).toBe(viaPositional);
-  });
-
   it('accepts a plain string as the method in the options object', () => {
     const client = newClient();
     expect(client.generatePresignedUri('b', 'o', FUTURE, { method: 'PUT' })).toBe(
-      client.generatePresignedUri('b', 'o', FUTURE, HttpMethod.PUT),
+      client.generatePresignedUri('b', 'o', FUTURE, { method: HttpMethod.PUT }),
     );
   });
 
-  it('accepts sub-resources in the options object', () => {
+  it('signs content-type and content-md5 into the pre-signed URI', () => {
     const client = newClient();
-    expect(client.generatePresignedUri('b', 'o', FUTURE, { subResources: ['acl'] })).toBe(
-      client.generatePresignedUri('b', 'o', FUTURE, HttpMethod.GET, [SubResource.ACL]),
-    );
-  });
-
-  it('supports an options object for CDN pre-signing', () => {
-    const client = newClient();
-    const viaOptions = client.generatePresignedCdnUri('b', 'o', FUTURE, { method: 'HEAD' });
-    const viaPositional = client.generatePresignedCdnUri('b', 'o', FUTURE, HttpMethod.HEAD);
-    expect(viaOptions).toBe(viaPositional);
+    const plain = client.generatePresignedUri('b', 'o', FUTURE, { method: 'PUT' });
+    const withHeaders = client.generatePresignedUri('b', 'o', FUTURE, {
+      method: 'PUT',
+      contentType: 'image/png',
+      contentMD5: '1B2M2Y8AsgTpgAmY7PhCfg==',
+    });
+    expect(withHeaders).not.toBe(plain);
   });
 });

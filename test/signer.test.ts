@@ -18,16 +18,14 @@ describe('Signer API', () => {
       `Galaxy-V2 ${ACCESS_ID}:${signature}`,
     );
     expect(
-      generatePresignedUri(
-        'http://files.fds.api.xiaomi.com/',
-        'my-bucket',
-        'my-object',
-        undefined,
-        1700000000000,
-        HttpMethod.GET,
-        ACCESS_ID,
-        ACCESS_SECRET,
-      ),
+      generatePresignedUri({
+        baseUri: 'http://files.fds.api.xiaomi.com/',
+        bucketName: 'my-bucket',
+        objectName: 'my-object',
+        expiration: 1700000000000,
+        accessId: ACCESS_ID,
+        accessSecret: ACCESS_SECRET,
+      }),
     ).toContain('Signature=');
   });
 });
@@ -71,16 +69,14 @@ describe('getAuthorizationHeader date requirement', () => {
 
 describe('generatePresignedUri input validation', () => {
   function presign(expiration: Date | number, bucketName = 'my-bucket'): string {
-    return Signer.generatePresignedUri(
-      'http://files.fds.api.xiaomi.com/',
+    return Signer.generatePresignedUri({
+      baseUri: 'http://files.fds.api.xiaomi.com/',
       bucketName,
-      'my-object',
-      [],
+      objectName: 'my-object',
       expiration,
-      HttpMethod.GET,
-      ACCESS_ID,
-      ACCESS_SECRET,
-    );
+      accessId: ACCESS_ID,
+      accessSecret: ACCESS_SECRET,
+    });
   }
 
   it('rejects an empty bucket name', () => {

@@ -1,12 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import {
-  BasicFDSCredential,
-  GalaxyFDSSigner,
-  GalaxyFDSSignerError,
-  HttpMethod,
-  Signer,
-} from '../src/index.js';
+import { BasicFDSCredential, GalaxyFDSSigner, GalaxyFDSSignerError, Signer } from '../src/index.js';
 
 const ACCESS_ID = 'AKIDEXAMPLEACCESSID';
 const ACCESS_SECRET = 'wJalrXUtnFEMIK7MDENGbPxRfiCYEXAMPLEKEY';
@@ -33,16 +27,14 @@ describe('virtual-hosted-style addressing', () => {
   it('produces the same signature as the non-virtual host', () => {
     const client = newVirtualClient();
     const virtual = client.generatePresignedUri('my-bucket', 'my-object', EXPIRES);
-    const plain = Signer.generatePresignedUri(
-      'https://files.mi-fds.com/',
-      'my-bucket',
-      'my-object',
-      undefined,
-      EXPIRES,
-      HttpMethod.GET,
-      ACCESS_ID,
-      ACCESS_SECRET,
-    );
+    const plain = Signer.generatePresignedUri({
+      baseUri: 'https://files.mi-fds.com/',
+      bucketName: 'my-bucket',
+      objectName: 'my-object',
+      expiration: EXPIRES,
+      accessId: ACCESS_ID,
+      accessSecret: ACCESS_SECRET,
+    });
     expect(signatureOf(virtual)).toBe(signatureOf(plain));
   });
 
