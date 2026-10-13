@@ -36,20 +36,28 @@ export type CredentialInput = GalaxyFDSCredential | CredentialObject;
  * Ported from `com.xiaomi.infra.galaxy.fds.client.credential.BasicFDSCredential`.
  */
 export class BasicFDSCredential implements GalaxyFDSCredential {
-  private readonly accessId: string;
-  private readonly accessSecret: string;
+  // ECMAScript private fields: unlike TypeScript `private`, they are not
+  // visible to console.log / util.inspect / JSON.stringify / Object.keys,
+  // so the secret cannot leak into logs by accident.
+  readonly #accessId: string;
+  readonly #accessSecret: string;
 
   constructor(accessId: string, accessSecret: string) {
-    this.accessId = accessId;
-    this.accessSecret = accessSecret;
+    this.#accessId = accessId;
+    this.#accessSecret = accessSecret;
   }
 
   getGalaxyAccessId(): string {
-    return this.accessId;
+    return this.#accessId;
   }
 
   getGalaxyAccessSecret(): string {
-    return this.accessSecret;
+    return this.#accessSecret;
+  }
+
+  /** Serializes without the secret. */
+  toJSON(): { accessId: string } {
+    return { accessId: this.#accessId };
   }
 }
 

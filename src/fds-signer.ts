@@ -46,7 +46,8 @@ export interface PresignOptions {
  * pre-signed URIs.
  */
 export class GalaxyFDSSigner {
-  private readonly credential: GalaxyFDSCredential;
+  // #private so the credential never shows up when the signer is logged.
+  readonly #credential: GalaxyFDSCredential;
   private readonly config: FDSEndpointConfiguration;
   private readonly signAlgorithm: SignAlgorithm;
 
@@ -56,7 +57,7 @@ export class GalaxyFDSSigner {
    * @param options    Endpoint, addressing and algorithm overrides.
    */
   constructor(credential: CredentialInput, options: GalaxyFDSSignerOptions = {}) {
-    this.credential = toGalaxyFDSCredential(credential);
+    this.#credential = toGalaxyFDSCredential(credential);
     this.config = new FDSEndpointConfiguration(options);
     this.signAlgorithm = options.signAlgorithm ?? SignAlgorithm.HmacSHA1;
   }
@@ -78,8 +79,8 @@ export class GalaxyFDSSigner {
       httpMethod,
       uri,
       httpHeaders,
-      this.credential.getGalaxyAccessId(),
-      this.credential.getGalaxyAccessSecret(),
+      this.#credential.getGalaxyAccessId(),
+      this.#credential.getGalaxyAccessSecret(),
       this.signAlgorithm,
     );
   }
@@ -144,8 +145,8 @@ export class GalaxyFDSSigner {
       subResources,
       expiration,
       method,
-      accessId: this.credential.getGalaxyAccessId(),
-      accessSecret: this.credential.getGalaxyAccessSecret(),
+      accessId: this.#credential.getGalaxyAccessId(),
+      accessSecret: this.#credential.getGalaxyAccessSecret(),
       algorithm: this.signAlgorithm,
       headers,
     });
