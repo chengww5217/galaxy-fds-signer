@@ -61,28 +61,45 @@ describe('generatePresignedUri input validation', () => {
 });
 
 describe('HeaderMultiMap', () => {
-  it('looks up values by exact key, preserving insertion order', () => {
+  it('looks up values case-insensitively, preserving insertion order', () => {
     const map = new HeaderMultiMap();
     map.put('X-Xiaomi-Date', 'v1');
     map.put('x-xiaomi-date', 'v2');
-    expect(map.get('X-Xiaomi-Date')).toEqual(['v1']);
-    expect(map.get('x-xiaomi-date')).toEqual(['v2']);
-    expect(map.get('X-XIAOMI-DATE')).toEqual([]);
-    expect(map.getFirst('x-xiaomi-date')).toBe('v2');
+    expect(map.get('X-Xiaomi-Date')).toEqual(['v1', 'v2']);
+    expect(map.get('X-XIAOMI-DATE')).toEqual(['v1', 'v2']);
+    expect(map.getFirst('x-xiaomi-date')).toBe('v1');
+    expect(map.has('X-XIAOMI-DATE')).toBe(true);
+    expect(map.has('date')).toBe(false);
     expect(map.entries()).toEqual([
-      ['X-Xiaomi-Date', 'v1'],
+      ['x-xiaomi-date', 'v1'],
       ['x-xiaomi-date', 'v2'],
     ]);
   });
 
   it('builds from a plain object with single or array values', () => {
     const map = HeaderMultiMap.from({
-      'content-type': 'text/plain',
+      'Content-Type': 'text/plain',
       'x-xiaomi-meta-tags': ['a', 'b'],
     });
     expect(map.getFirst('content-type')).toBe('text/plain');
-    expect(map.getFirst('Content-Type')).toBe('');
+    expect(map.getFirst('Content-Type')).toBe('text/plain');
     expect(map.get('x-xiaomi-meta-tags')).toEqual(['a', 'b']);
+  });
+
+  it('builds from a WHATWG Headers instance', () => {
+    const map = HeaderMultiMap.from(
+      new Headers({ 'Content-Type': 'text/plain', 'X-Xiaomi-Acl': 'private' }),
+    );
+    expect(map.getFirst('content-type')).toBe('text/plain');
+    expect(map.getFirst('x-xiaomi-acl')).toBe('private');
+  });
+
+  it('builds from a list of [name, value] pairs', () => {
+    const map = HeaderMultiMap.from([
+      ['X-Xiaomi-Meta-A', '1'],
+      ['x-xiaomi-meta-a', '2'],
+    ]);
+    expect(map.get('x-xiaomi-meta-a')).toEqual(['1', '2']);
   });
 
   it('from() returns the same instance when given one', () => {

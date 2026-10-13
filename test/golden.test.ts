@@ -156,6 +156,27 @@ const SIGN_CASES: SignCase[] = [
     },
   },
   {
+    // Java only recognizes lower-case names; the expected values are the Java
+    // output for the lower-cased equivalent of these mixed-case headers.
+    name: 'mixed-case-header-names',
+    httpMethod: HttpMethod.PUT,
+    uri: 'http://files.fds.api.xiaomi.com/my-bucket/my-object',
+    headers: [
+      ['Content-Type', 'text/plain'],
+      ['Content-MD5', '1B2M2Y8AsgTpgAmY7PhCfg=='],
+      ['Date', 'Sun, 06 Nov 1994 08:49:37 GMT'],
+      ['X-Xiaomi-Meta-Foo', 'a'],
+      ['x-xiaomi-meta-foo', 'b'],
+    ],
+    algorithm: SignAlgorithm.HmacSHA1,
+    expected: {
+      stringToSign:
+        'PUT\n1B2M2Y8AsgTpgAmY7PhCfg==\ntext/plain\nSun, 06 Nov 1994 08:49:37 GMT\nx-xiaomi-meta-foo:a,b\n/my-bucket/my-object',
+      signature: 'KXHN8Qb+7Bi76BkBx7/2YjKJEqw=',
+      authorizationHeader: 'Galaxy-V2 AKIDEXAMPLEACCESSID:KXHN8Qb+7Bi76BkBx7/2YjKJEqw=',
+    },
+  },
+  {
     name: 'expires-in-uri',
     httpMethod: HttpMethod.GET,
     uri: 'http://files.fds.api.xiaomi.com/my-bucket/my-object?GalaxyAccessKeyId=AKIDEXAMPLEACCESSID&Expires=1700000000000',

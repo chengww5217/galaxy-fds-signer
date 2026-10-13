@@ -29,6 +29,9 @@ export default [
     rules: {
       ...tseslint.configs.recommended.rules,
       '@typescript-eslint/no-explicit-any': 'warn',
+      // TypeScript already reports undefined identifiers; the base rule does
+      // not know about runtime globals such as Headers or crypto.
+      'no-undef': 'off',
       // The base rule does not understand TypeScript declaration merging
       // (a const and a type sharing a name); the TS-aware variant does.
       'no-redeclare': 'off',

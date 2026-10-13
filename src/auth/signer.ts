@@ -12,65 +12,92 @@ import { GalaxyFDSClientException } from '../errors.js';
 import { encodeUriPath, parseUri, parseUriParameters, urlEncode } from './utils.js';
 
 /**
- * Multimap of HTTP headers, preserving insertion order and allowing multiple
- * values per key. Lookups are case-sensitive, mirroring the Guava
- * `LinkedListMultimap` used by the Java SDK.
+ * Headers participating in a signature. Accepts a plain object (values may be
+ * a single string or an array), a list of `[name, value]` pairs, a WHATWG
+ * `Headers` instance, or a {@link HeaderMultiMap}.
  *
- * Accepts plain objects where values may be a single string or an array.
+ * Header names are case-insensitive, as in HTTP: `Content-Type` and
+ * `content-type` are the same header.
  */
-export type HttpHeaders = Record<string, string | string[]> | HeaderMultiMap;
+export type HttpHeaders =
+  | Record<string, string | string[]>
+  | Iterable<readonly [string, string]>
+  | Headers
+  | HeaderMultiMap;
 
-/** Ordered, multi-valued header container with case-sensitive key lookup. */
+/**
+ * Ordered, multi-valued header container. Names are normalized to lower case
+ * so lookups are case-insensitive.
+ *
+ * The Java SDK uses a case-sensitive Guava `LinkedListMultimap` and only
+ * recognizes lower-case names; for lower-case input the two behave
+ * identically, while mixed-case input no longer silently drops headers.
+ */
 export class HeaderMultiMap {
   private readonly entriesList: Array<[string, string]> = [];
 
-  /** Builds a multimap from a plain headers object. */
+  /** Builds a multimap from any supported headers shape. */
   static from(headers?: HttpHeaders): HeaderMultiMap {
     if (headers instanceof HeaderMultiMap) {
       return headers;
     }
     const map = new HeaderMultiMap();
-    if (headers) {
-      for (const [key, value] of Object.entries(headers)) {
-        if (Array.isArray(value)) {
-          for (const v of value) {
-            map.put(key, v);
-          }
-        } else {
-          map.put(key, value);
+    if (headers === undefined || headers === null) {
+      return map;
+    }
+    if (isIterable(headers)) {
+      for (const [key, value] of headers) {
+        map.put(key, value);
+      }
+      return map;
+    }
+    for (const [key, value] of Object.entries(headers)) {
+      if (Array.isArray(value)) {
+        for (const v of value) {
+          map.put(key, v);
         }
+      } else {
+        map.put(key, value);
       }
     }
     return map;
   }
 
   put(key: string, value: string): void {
-    this.entriesList.push([key, value]);
+    this.entriesList.push([key.toLowerCase(), String(value)]);
   }
 
-  /** All original (key, value) entries in insertion order. */
+  /** All (lower-cased key, value) entries in insertion order. */
   entries(): ReadonlyArray<[string, string]> {
     return this.entriesList;
   }
 
-  /**
-   * Returns all values whose key equals `name` exactly, in insertion order.
-   */
+  /** Returns all values for `name` (case-insensitive), in insertion order. */
   get(name: string): string[] {
+    const key = name.toLowerCase();
     const values: string[] = [];
     for (const [k, v] of this.entriesList) {
-      if (k === name) {
+      if (k === key) {
         values.push(v);
       }
     }
     return values;
   }
 
-  /** First value for `name` (exact match), or empty string when absent. */
+  /** Whether at least one value is present for `name` (case-insensitive). */
+  has(name: string): boolean {
+    return this.get(name).length > 0;
+  }
+
+  /** First value for `name` (case-insensitive), or empty string when absent. */
   getFirst(name: string): string {
     const values = this.get(name);
     return values.length > 0 ? values[0] : '';
   }
+}
+
+function isIterable(value: object): value is Iterable<readonly [string, string]> {
+  return typeof (value as { [Symbol.iterator]?: unknown })[Symbol.iterator] === 'function';
 }
 
 /**
@@ -250,16 +277,17 @@ export function constructStringToSign(
 export function canonicalizeXiaomiHeaders(headers: HttpHeaders | undefined): string {
   const map = HeaderMultiMap.from(headers);
 
-  // Group by lower-cased key, joining multiple values with ",".
+  // Keys are already lower-cased; group values per key, joined with ",".
   const sorted = new Map<string, string[]>();
-  for (const [k] of map.entries()) {
-    const key = k.toLowerCase();
+  for (const [key, value] of map.entries()) {
     if (!key.startsWith(Common.XIAOMI_HEADER_PREFIX)) {
       continue;
     }
-    if (!sorted.has(key)) {
-      // Collect every value for this original-cased key once.
-      sorted.set(key, map.get(k));
+    const values = sorted.get(key);
+    if (values) {
+      values.push(value);
+    } else {
+      sorted.set(key, [value]);
     }
   }
 
