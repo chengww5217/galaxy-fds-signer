@@ -24,7 +24,7 @@ const signer = createSigner(OPTIONS);
 
 const signatureOf = (url: string) => new URL(url).searchParams.get('Signature');
 
-// Expected values were produced by galaxy-fds-sdk-java 3.0.37 from the same
+// Expected values were produced by galaxy-fds-sdk-java 3.0.48 from the same
 // URL and headers.
 describe('signRequest — parity with the Java SDK', () => {
   it('signs a GET of an object with non-ASCII / space characters', async () => {

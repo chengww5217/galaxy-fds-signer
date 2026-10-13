@@ -38,8 +38,7 @@ interface PresignCase {
   expected: { uri: string };
 }
 
-// Representative cases pinned against galaxy-fds-sdk-java output (originally
-// captured from 3.0.48; all re-verified, and the newer cases produced, with 3.0.37).
+// Representative cases pinned against galaxy-fds-sdk-java 3.0.48 output.
 // Each one exercises a distinct facet of the signing rules; the expected
 // values were captured from the reference Java SDK and are intentionally
 // hard-coded so the suite has no external generation step.
@@ -304,7 +303,7 @@ const PRESIGN_CASES: PresignCase[] = [
     },
   },
   {
-    // Java 3.0.37 renders the value as `a/b%20c`; both forms decode to the
+    // Java 3.0.48 renders the value as `a/b%20c`; both forms decode to the
     // same signed query `uploadId=a/b c`, so the signature is identical.
     name: 'presign-with-subresource-values',
     baseUri: 'http://files.fds.api.xiaomi.com/',

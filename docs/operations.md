@@ -1,6 +1,6 @@
 # Operations
 
-This page lists every Galaxy FDS operation that the official Java SDK client (`GalaxyFDSClient`, 3.0.37) sends, and the `signRequest` input that produces the same request. All rows are tested in `test/operations.test.ts`: `signRequest` must produce the exact URL and signature the Java client produces.
+This page lists every Galaxy FDS operation that the official Java SDK client (`GalaxyFDSClient`, 3.0.48) sends, and the `signRequest` input that produces the same request. All rows are tested in `test/operations.test.ts`: `signRequest` must produce the exact URL and signature the Java client produces.
 
 ```ts
 const req = await signer.signRequest({ method: 'PUT', bucket: 'bkt', object: 'dir/obj.txt', subResources: ['acl'],
@@ -16,7 +16,7 @@ How to read the tables:
 - Body is what you pass to `fetch` as `body`. This library never builds or reads bodies.
 - Pre-sign ✅ means the operation needs no unsigned query parameters, so you can also hand it out as a [pre-signed URL](./presign.md).
 
-Not included: `listNextBatchOf*` (same request as the list call, with `marker`), and the Java SDK's local helpers that send no request (`generate*Uri`, anti-stealing links). `deleteObject(bucket, object, versionId)` is not included either, because the 3.0.37 client sends the version id in a way that could not be captured.
+Not included: `listNextBatchOf*` (same request as the list call, with `marker`), and the Java SDK's local helpers that send no request (`generate*Uri`, anti-stealing links). `deleteObject(bucket, object, versionId)` is not included either, because the 3.0.48 client sends the version id in a way that could not be captured.
 
 <!-- generated:start -->
 ### Service

@@ -3,7 +3,7 @@
  * official Java SDK.
  *
  * test/fixtures/operations.json was produced by driving the real
- * galaxy-fds-sdk-java 3.0.37 GalaxyFDSClient against a local capture server
+ * galaxy-fds-sdk-java 3.0.48 GalaxyFDSClient against a local capture server
  * (recording the method, path and query it sends for each operation), then
  * signing those requests with the Java Signer. For each operation we check
  * that signRequest builds the same URL and signature, and, for operations

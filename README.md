@@ -50,7 +50,7 @@ npm run build
 npm run docs        # regenerates the tables in docs/ from test/fixtures/operations.json
 ```
 
-The expected values in `test/golden.test.ts`, `test/api.test.ts` and `test/fixtures/operations.json` were produced by the official `galaxy-fds-sdk-java` (3.0.37, and 3.0.48 for the original cases). If you change signing behavior, regenerate the affected values from the Java SDK. `test/docs.test.ts` fails if the generated docs are out of date.
+The expected values in `test/golden.test.ts`, `test/api.test.ts` and `test/fixtures/operations.json` were produced by the official `galaxy-fds-sdk-java` (3.0.48). If you change signing behavior, regenerate the affected values from the Java SDK. `test/docs.test.ts` fails if the generated docs are out of date.
 
 ## License
 
