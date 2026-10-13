@@ -210,6 +210,9 @@ describe('signRequest', () => {
     ['a non-scalar sub-resource value', { bucket: 'b', subResources: { uploadId: {} } }],
     ['a non-object query', { bucket: 'b', query: 'a=1' }],
     ['a non-scalar query value', { bucket: 'b', query: { a: {} } }],
+    ['a sub-resource passed as query', { bucket: 'b', query: { uploadId: 'x' } }],
+    ['Expires passed as query', { bucket: 'b', query: { Expires: '9999999999999' } }],
+    ['Signature passed as query (any case)', { bucket: 'b', query: { signature: 'x' } }],
     ['no input', undefined],
   ])('rejects %s', async (_name, input) => {
     await expect(signer.signRequest(input as never)).rejects.toThrow(GalaxyFDSSignerError);

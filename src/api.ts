@@ -1,6 +1,13 @@
 import { FDSEndpointConfiguration, type FDSEndpointOptions } from './config.js';
 import { Common } from './common.js';
-import { HttpMethod, SignAlgorithm, toHttpMethod, toSignAlgorithm, XiaomiHeader } from './enums.js';
+import {
+  HttpMethod,
+  SignAlgorithm,
+  SUB_RESOURCE_SET,
+  toHttpMethod,
+  toSignAlgorithm,
+  XiaomiHeader,
+} from './enums.js';
 import {
   GalaxyFDSSignerError,
   type GalaxyFDSSignerErrorCode,
@@ -137,6 +144,16 @@ const DEFAULT_EXPIRES_IN_SECONDS = 15 * 60;
 
 /** A single DNS label: what a bucket must be to serve as a subdomain. */
 const DNS_LABEL = /^[A-Za-z0-9](?:[A-Za-z0-9-]{0,61}[A-Za-z0-9])?$/;
+
+/**
+ * Query parameter names (lower-cased) that the signature interprets, so they
+ * cannot be passed as unsigned `query` parameters.
+ */
+const RESERVED_QUERY_NAMES: ReadonlySet<string> = new Set(
+  [...SUB_RESOURCE_SET, Common.GALAXY_ACCESS_KEY_ID, Common.SIGNATURE, Common.EXPIRES].map((n) =>
+    n.toLowerCase(),
+  ),
+);
 
 /**
  * Creates a signer bound to a credential and an endpoint.
@@ -393,6 +410,18 @@ function toQueryParams(query: unknown): string[] {
   }
   const params: string[] = [];
   for (const [key, value] of Object.entries(query)) {
+    if (RESERVED_QUERY_NAMES.has(key.toLowerCase())) {
+      // A sub-resource here would be signed (or override the one in
+      // `subResources`), and `Expires` would turn the date line of the
+      // signature into an expiration: neither is the unsigned parameter the
+      // caller asked for.
+      throw new GalaxyFDSSignerError(
+        'INVALID_QUERY',
+        `query parameter ${JSON.stringify(key)} is reserved: ` +
+          'pass sub-resources via subResources, and use presign for pre-signed URLs',
+        { field: 'query' },
+      );
+    }
     if (typeof value !== 'string' && typeof value !== 'number') {
       throw new GalaxyFDSSignerError(
         'INVALID_QUERY',

@@ -306,6 +306,13 @@ describe('error codes', () => {
       () => signer.signRequest({ bucket: 'b', query: { a: {} as never } }),
     ],
     [
+      'INVALID_QUERY',
+      'input',
+      'query',
+      'reserved query name',
+      () => signer.signRequest({ bucket: 'b', query: { Expires: 1 } }),
+    ],
+    [
       'INVALID_URL',
       'input',
       'url',

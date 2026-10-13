@@ -79,7 +79,7 @@ Give either a resource target (`bucket` / `object` / `subResources` / `cdn` / `q
 | `bucket` | `string` | configured `bucket` | Bucket name. Omit it to use the signer's `bucket` option; when none is configured, omit it only for service-level requests such as listing buckets. It must not contain `/`. |
 | `object` | `string` | — | Object name, e.g. `photos/2024/cat.png`. It is percent-encoded for you; spaces and non-ASCII characters are fine. It requires `bucket`. |
 | `subResources` | [`SubResources`](#sub-resources) | — | Signed query parameters, e.g. `['acl']` or `{ uploadId, partNumber: 1 }`. They require `bucket`. |
-| `query` | `Record<string, string \| number>` | — | Extra query parameters, URL-encoded and appended after the sub-resources. They are sent but not signed, as in the Java SDK. Use `''` for a bare flag (`{ cors: '' }` produces `?cors=`). |
+| `query` | `Record<string, string \| number>` | — | Extra query parameters, URL-encoded and appended after the sub-resources. They are sent but not signed, as in the Java SDK. Use `''` for a bare flag (`{ cors: '' }` produces `?cors=`). Sub-resource names and `Expires` / `GalaxyAccessKeyId` / `Signature` are rejected, since the signature would interpret them. |
 | `cdn` | `boolean` | `false` | Target the CDN host instead of the service host. |
 | `url` | `string` | — | An absolute, already-encoded URL to sign as-is. Use it instead of the fields above. |
 | `headers` | [`RequestHeaders`](#headers) | — | Headers to sign and send, e.g. `content-type`, `content-md5`, `x-xiaomi-meta-*`. |
@@ -240,7 +240,7 @@ class GalaxyFDSSignerError extends Error {
 | `INVALID_BUCKET` | input | `bucket` | A missing `bucket` for `presign`, or for `object` / `subResources`; a bucket containing `/`; a bucket that is not a DNS label on a `*.mi-fds.com` endpoint |
 | `INVALID_OBJECT` | input | `object` | `object` is not a string |
 | `INVALID_SUB_RESOURCE` | input | `subResources` | A sub-resource name not in the list above, or a value that is not a string, number or boolean |
-| `INVALID_QUERY` | input | `query` | `query` is not an object, or a value is not a string or number |
+| `INVALID_QUERY` | input | `query` | `query` is not an object, a value is not a string or number, or a name is reserved (a sub-resource, `Expires`, `GalaxyAccessKeyId` or `Signature`, in any case) |
 | `INVALID_URL` | input | `url` | An empty, relative or malformed `url`, or `url` combined with `bucket` / `object` / `subResources` / `cdn` / `query` |
 | `INVALID_DATE` | input | `date` | `date` is not a valid `Date` |
 | `INVALID_EXPIRATION` | input | `expires`, `expiresIn` | An expiration that is not an integer, is in seconds instead of milliseconds, or is in the past; `expiresIn <= 0` |
