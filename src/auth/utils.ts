@@ -12,27 +12,65 @@ export interface UriParts {
   host: string;
   /** Port, or `-1` when not present (matching `java.net.URI.getPort()`). */
   port: number;
-  /** Decoded path component, always starting with `/`. */
+  /** Decoded path component, as `java.net.URI.getPath()` returns it. */
   path: string;
-  /** Raw query string without the leading `?`, or `undefined` when absent. */
+  /**
+   * Decoded query string without the leading `?` (as
+   * `java.net.URI.getQuery()` returns it), or `undefined` when absent.
+   */
   query?: string;
 }
+
+// scheme://authority path ?query #fragment, kept verbatim (no normalization).
+const RAW_URI = /^([A-Za-z][A-Za-z0-9+.-]*):\/\/([^/?#]*)([^?#]*)(?:\?([^#]*))?(?:#.*)?$/;
 
 /**
  * Parses a URI string into the components used while signing.
  *
- * Mirrors how the Java SDK reads `java.net.URI`: `getPath()` returns the
- * decoded path and `getQuery()` the (decoded) query string.
+ * Mirrors `java.net.URI`: the path and query are taken verbatim from the
+ * input (WHATWG `URL` would resolve `..` segments and re-encode characters)
+ * and then percent-decoded as UTF-8, with invalid sequences replaced by
+ * U+FFFD.
  */
 export function parseUri(uri: string): UriParts {
   const url = new URL(uri);
+  const raw = RAW_URI.exec(uri);
+  if (raw === null) {
+    throw new TypeError(`Invalid URL: ${uri}`);
+  }
   return {
     scheme: url.protocol.replace(/:$/, ''),
     host: url.hostname,
     port: url.port === '' ? -1 : Number(url.port),
-    path: decodeURIComponent(url.pathname),
-    query: url.search === '' ? undefined : url.search.slice(1),
+    path: percentDecode(raw[3]),
+    query: raw[4] === undefined ? undefined : percentDecode(raw[4]),
   };
+}
+
+const utf8Decoder = new TextDecoder('utf-8');
+const utf8Encoder = new TextEncoder();
+
+/**
+ * Decodes `%XX` sequences as UTF-8 the way `java.net.URI` does. Unlike
+ * `decodeURIComponent` it never throws, and `+` is left untouched.
+ */
+export function percentDecode(s: string): string {
+  if (!s.includes('%')) {
+    return s;
+  }
+  const bytes: number[] = [];
+  for (let i = 0; i < s.length;) {
+    if (s[i] === '%' && /^[0-9A-Fa-f]{2}$/.test(s.substring(i + 1, i + 3))) {
+      bytes.push(Number.parseInt(s.substring(i + 1, i + 3), 16));
+      i += 3;
+    } else {
+      const cp = s.codePointAt(i)!;
+      const ch = String.fromCodePoint(cp);
+      bytes.push(...utf8Encoder.encode(ch));
+      i += ch.length;
+    }
+  }
+  return utf8Decoder.decode(new Uint8Array(bytes));
 }
 
 /**

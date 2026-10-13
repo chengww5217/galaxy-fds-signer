@@ -93,6 +93,14 @@ describe('parseUri', () => {
     const parts = parseUri('http://host/bucket/a%20b');
     expect(parts.path).toBe('/bucket/a b');
   });
+
+  it('decodes the query component like java.net.URI.getQuery', () => {
+    expect(parseUri('http://host/b/o?uploadId=a%2Fb%20c+d').query).toBe('uploadId=a/b c+d');
+  });
+
+  it('does not throw on malformed percent sequences', () => {
+    expect(parseUri('http://host/b/100%?x=%zz').path).toBe('/b/100%');
+  });
 });
 
 describe('getGMTDatetime', () => {
