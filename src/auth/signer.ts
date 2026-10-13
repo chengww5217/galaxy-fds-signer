@@ -10,7 +10,13 @@ import {
 } from '../enums.js';
 import { GalaxyFDSSignerError, requireString, wrapErrors, wrapErrorsAsync } from '../errors.js';
 import { hmac, toBase64 } from './crypto.js';
-import { encodeUriPath, isWellFormed, parseUri, parseUriParameters, urlEncode } from './utils.js';
+import {
+  buildResourceUri,
+  isWellFormed,
+  parseUri,
+  parseUriParameters,
+  urlEncode,
+} from './utils.js';
 
 /**
  * Headers participating in a signature. Accepts a plain object (values may be
@@ -316,12 +322,7 @@ export const Signer = {
     bucketName,
     objectName = '',
     subResources,
-    expiration,
-    method = HttpMethod.GET,
-    accessId,
-    accessSecret,
-    algorithm = SignAlgorithm.HmacSHA1,
-    headers: httpHeaders,
+    ...options
   }: PresignUriInput): Promise<string> {
     requireString(bucketName, 'bucketName', 'INVALID_BUCKET');
     if (bucketName.includes('/')) {
@@ -332,42 +333,62 @@ export const Signer = {
         { field: 'bucketName' },
       );
     }
-    requireString(accessId, 'accessId', 'INVALID_CREDENTIALS');
-    const expiresMillis = toExpiresMillis(expiration);
+    const { accessId, expiresMillis } = validatePresignOptions(options);
     const subResourceParts = formatSubResources(subResources);
-
-    const encodedUri = wrapErrors(
+    const resourceUri = wrapErrors(
       'INVALID_ENDPOINT',
       'failed to generate pre-signed URI',
-      () => {
-        const base = new URL(baseUri);
-        const objectPart = objectName.length > 0 ? '/' + objectName : '';
-
-        // Encode the path as java.net.URI's constructor would. Signing re-parses
-        // this URI and decodes the path back, so the signature is unaffected.
-        const path = encodeUriPath('/' + bucketName + objectPart);
-        const queryParts: string[] = [];
-        queryParts.push(...subResourceParts);
-        queryParts.push(`${Common.GALAXY_ACCESS_KEY_ID}=${accessId}`);
-        queryParts.push(`${Common.EXPIRES}=${expiresMillis}`);
-        const query = queryParts.join('&');
-
-        const port = base.port === '' ? '' : `:${base.port}`;
-        return `${base.protocol}//${base.hostname}${port}${path}?${query}`;
-      },
+      () => buildResourceUri(baseUri, bucketName, objectName, subResourceParts),
       'baseUri',
     );
+    return signPresignedUri(resourceUri, accessId, expiresMillis, options);
+  },
 
-    const signature = await Signer.signToBase64(
-      method,
-      encodedUri,
-      httpHeaders,
-      accessSecret,
-      algorithm,
-    );
-    return `${encodedUri}&${Common.SIGNATURE}=${urlEncode(signature)}`;
+  /**
+   * Pre-signs an already-built resource URI (`…/{bucket}/{object}[?{sub-resources}]`,
+   * e.g. from {@link buildResourceUri}) by appending `GalaxyAccessKeyId`,
+   * `Expires` and `Signature`. Its query must hold only encoded sub-resources.
+   */
+  async presignResourceUri(resourceUri: string, options: PresignOptions): Promise<string> {
+    const { accessId, expiresMillis } = validatePresignOptions(options);
+    return signPresignedUri(resourceUri, accessId, expiresMillis, options);
   },
 };
+
+/** The signing parameters of a pre-signed URI; see {@link PresignUriInput}. */
+export type PresignOptions = Omit<
+  PresignUriInput,
+  'baseUri' | 'bucketName' | 'objectName' | 'subResources'
+>;
+
+function validatePresignOptions(options: PresignOptions): {
+  accessId: string;
+  expiresMillis: number;
+} {
+  return {
+    accessId: requireString(options.accessId, 'accessId', 'INVALID_CREDENTIALS'),
+    expiresMillis: toExpiresMillis(options.expiration),
+  };
+}
+
+async function signPresignedUri(
+  resourceUri: string,
+  accessId: string,
+  expiresMillis: number,
+  {
+    method = HttpMethod.GET,
+    accessSecret,
+    algorithm = SignAlgorithm.HmacSHA1,
+    headers,
+  }: PresignOptions,
+): Promise<string> {
+  const separator = resourceUri.includes('?') ? '&' : '?';
+  const encodedUri =
+    resourceUri +
+    `${separator}${Common.GALAXY_ACCESS_KEY_ID}=${accessId}&${Common.EXPIRES}=${expiresMillis}`;
+  const signature = await Signer.signToBase64(method, encodedUri, headers, accessSecret, algorithm);
+  return `${encodedUri}&${Common.SIGNATURE}=${urlEncode(signature)}`;
+}
 
 /**
  * Smallest accepted expiration (2001-09-09T01:46:40Z). Anything below is

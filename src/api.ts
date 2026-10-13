@@ -22,7 +22,7 @@ import {
   type SubResources,
   toExpiresMillis,
 } from './auth/signer.js';
-import { encodeUriPath, isWellFormed, urlEncode } from './auth/utils.js';
+import { buildResourceUri, isWellFormed, urlEncode } from './auth/utils.js';
 
 /** Configuration shared by every request signed with {@link createSigner}. */
 export interface SignerOptions extends FDSEndpointOptions {
@@ -268,15 +268,10 @@ export function createSigner(options: SignerOptions): FdsSigner {
         field: 'bucket',
       });
     }
-    // Validate the target (and build the base URL) before signing.
+    // Validates the target and builds `…/{bucket}/{object}?{sub-resources}` on
+    // the right (CDN / virtual-hosted) host; signing only appends to it.
     const resourceUrl = resolveUrl(input, bucket, []);
-    const { origin } = new URL(resourceUrl);
-
-    const url = await Signer.generatePresignedUri({
-      baseUri: origin + '/',
-      bucketName: bucket,
-      objectName: input.object ?? '',
-      subResources: input.subResources,
+    const url = await Signer.presignResourceUri(resourceUrl, {
       expiration: expiresAt,
       method,
       accessId,
@@ -493,16 +488,9 @@ function buildUrl(
   object: string,
   query: string[],
 ): string {
-  return wrapErrors('INVALID_ENDPOINT', 'invalid endpoint', () => {
-    const base = new URL(baseUri);
-    let path = '/';
-    if (bucket !== undefined) {
-      path = encodeUriPath('/' + bucket + (object.length > 0 ? '/' + object : ''));
-    }
-    const port = base.port === '' ? '' : `:${base.port}`;
-    const search = query.length > 0 ? '?' + query.join('&') : '';
-    return `${base.protocol}//${base.hostname}${port}${path}${search}`;
-  });
+  return wrapErrors('INVALID_ENDPOINT', 'invalid endpoint', () =>
+    buildResourceUri(baseUri, bucket, object, query),
+  );
 }
 
 /**

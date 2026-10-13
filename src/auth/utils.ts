@@ -150,6 +150,31 @@ export function urlEncode(value?: string): string {
     .replace(/\//g, '%2F');
 }
 
+/**
+ * Builds `{scheme}://{host}[:port]/{bucket}/{object}?{query}` from the
+ * scheme and authority of `baseUri` (its path is ignored). The path is encoded
+ * as `java.net.URI`'s constructor would; signing re-parses the URI and decodes
+ * it back, so the signature is unaffected. Without a bucket the path is `/`.
+ * The `query` fragments must already be encoded.
+ *
+ * @throws TypeError when `baseUri` is not an absolute URL.
+ */
+export function buildResourceUri(
+  baseUri: string,
+  bucket: string | undefined,
+  object: string,
+  query: readonly string[],
+): string {
+  const base = new URL(baseUri);
+  const path =
+    bucket === undefined
+      ? '/'
+      : encodeUriPath('/' + bucket + (object.length > 0 ? '/' + object : ''));
+  const port = base.port === '' ? '' : `:${base.port}`;
+  const search = query.length > 0 ? '?' + query.join('&') : '';
+  return `${base.protocol}//${base.hostname}${port}${path}${search}`;
+}
+
 // Characters legal in a URI path component per java.net.URI (RFC 2396):
 // unreserved (alphanum + mark) plus the path-specific punctuation. Anything
 // else is UTF-8 percent-encoded by the URI multi-argument constructor.

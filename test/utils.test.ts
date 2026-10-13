@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import {
+  buildResourceUri,
   encodeUriPath,
   isWellFormed,
   parseUri,
@@ -108,5 +109,22 @@ describe('encodeUriPath', () => {
 
   it('encodes characters outside the path set', () => {
     expect(encodeUriPath('/b/a?b#c"d')).toBe('/b/a%3Fb%23c%22d');
+  });
+});
+
+describe('buildResourceUri', () => {
+  it('keeps scheme, host and port, drops the base path, and encodes the object', () => {
+    expect(buildResourceUri('https://h.example:8443/ignored', 'b', 'a b/中', ['acl'])).toBe(
+      'https://h.example:8443/b/a%20b/%E4%B8%AD?acl',
+    );
+  });
+
+  it('renders / without a bucket and omits an empty query', () => {
+    expect(buildResourceUri('http://h/', undefined, '', [])).toBe('http://h/');
+    expect(buildResourceUri('http://h/', 'b', '', [])).toBe('http://h/b');
+  });
+
+  it('throws on a relative base URI', () => {
+    expect(() => buildResourceUri('nope', 'b', '', [])).toThrow(TypeError);
   });
 });

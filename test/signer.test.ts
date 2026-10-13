@@ -98,6 +98,45 @@ describe('pre-signed sub-resources', () => {
   });
 });
 
+describe('presignResourceUri', () => {
+  const options = {
+    expiration: 1700000000000,
+    accessId: ACCESS_ID,
+    accessSecret: ACCESS_SECRET,
+  };
+
+  it.each([
+    ['without sub-resources', 'http://files.fds.api.xiaomi.com/b/o', undefined],
+    [
+      'with sub-resources',
+      'http://files.fds.api.xiaomi.com/b/o?uploadId=u&partNumber=1',
+      {
+        uploadId: 'u',
+        partNumber: 1,
+      },
+    ],
+  ])('matches generatePresignedUri %s', async (_name, resourceUri, subResources) => {
+    expect(await Signer.presignResourceUri(resourceUri, options)).toBe(
+      await Signer.generatePresignedUri({
+        ...options,
+        baseUri: 'http://files.fds.api.xiaomi.com/',
+        bucketName: 'b',
+        objectName: 'o',
+        subResources,
+      }),
+    );
+  });
+
+  it('validates the access id and expiration', async () => {
+    await expect(
+      Signer.presignResourceUri('http://h/b', { ...options, accessId: '' }),
+    ).rejects.toThrow(expect.objectContaining({ code: 'INVALID_CREDENTIALS' }));
+    await expect(
+      Signer.presignResourceUri('http://h/b', { ...options, expiration: 1 }),
+    ).rejects.toThrow(expect.objectContaining({ code: 'INVALID_EXPIRATION' }));
+  });
+});
+
 describe('generatePresignedUri input validation', () => {
   function presign(expiration: Date | number, bucketName = 'my-bucket'): Promise<string> {
     return Signer.generatePresignedUri({
