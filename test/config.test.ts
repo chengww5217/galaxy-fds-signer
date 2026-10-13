@@ -18,7 +18,6 @@ describe('FDSClientConfiguration defaults', () => {
     expect(config.endpoint).toBeUndefined();
     expect(config.regionName).toBeUndefined();
     expect(config.shouldUseVirtualAddressing()).toBe(false);
-    expect(config.isInternalEndpoint()).toBe(false);
     expect(config.isHttpsEnabled()).toBe(false);
     expect(config.getBaseUri()).toBe(Common.DEFAULT_FDS_SERVICE_BASE_URI);
     expect(config.getCdnBaseUri()).toBe(Common.DEFAULT_CDN_SERVICE_URI);
@@ -39,10 +38,8 @@ describe('FDSClientConfiguration endpoint parsing', () => {
 
   it('recognizes the internal endpoint suffix', () => {
     const config = new FDSClientConfiguration({ endpoint: 'cnbj1-fds.api.xiaomi.net' });
-    expect(config.isInternalEndpoint()).toBe(true);
     expect(config.regionName).toBe('cnbj1');
     expect(config.getBaseUri()).toBe('https://cnbj1-fds.api.xiaomi.net/');
-    expect(config.getPrivateDownloadBaseUri()).toBe(config.getBaseUri());
   });
 
   it('honors enableHttps for non-virtual endpoints', () => {
@@ -73,14 +70,13 @@ describe('FDSClientConfiguration endpoint parsing', () => {
 });
 
 describe('FDSClientConfiguration virtual-hosted endpoints', () => {
-  it('forces HTTPS and disables the CDN', () => {
+  it('forces HTTPS and derives no CDN endpoint', () => {
     const config = new FDSClientConfiguration({ endpoint: 'files.mi-fds.com' });
     expect(config.shouldUseVirtualAddressing()).toBe(true);
     expect(config.isHttpsEnabled()).toBe(true);
     expect(config.regionName).toBe('files');
     expect(config.getBaseUri()).toBe('https://files.mi-fds.com/');
     expect(config.cdnEndpoint).toBeUndefined();
-    expect(config.isCdnEnabledForDownload()).toBe(false);
   });
 
   it('throws when a CDN URI is requested without a CDN endpoint', () => {

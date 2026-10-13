@@ -27,13 +27,6 @@ export interface FDSClientConfigurationOptions {
   cdnEndpoint?: string;
   /** Whether to use HTTPS. Forced on for virtual-hosted (`*.mi-fds.com`) endpoints. */
   enableHttps?: boolean;
-  /** Route uploads through the CDN endpoint. Defaults to `false`. */
-  enableCdnForUpload?: boolean;
-  /**
-   * Route downloads through the CDN endpoint. Defaults to `true`, except for
-   * virtual-hosted endpoints where it defaults to `false`.
-   */
-  enableCdnForDownload?: boolean;
   /** Explicit service base URI, taking precedence over {@link endpoint}. */
   baseUri?: string;
   /** Explicit CDN base URI, taking precedence over {@link cdnEndpoint}. */
@@ -67,8 +60,6 @@ export class FDSClientConfiguration {
 
   private readonly uriSuffix: string | undefined;
   private readonly enableHttps: boolean;
-  private readonly cdnForUpload: boolean;
-  private readonly cdnForDownload: boolean;
   private readonly explicitBaseUri: string | undefined;
   private readonly explicitCdnBaseUri: string | undefined;
 
@@ -106,8 +97,6 @@ export class FDSClientConfiguration {
     // The Java SDK forces HTTPS on virtual-hosted endpoints, and defaults to
     // HTTPS whenever an endpoint is configured.
     this.enableHttps = virtual ? true : (options.enableHttps ?? endpoint !== undefined);
-    this.cdnForUpload = options.enableCdnForUpload ?? false;
-    this.cdnForDownload = options.enableCdnForDownload ?? !virtual;
 
     if (options.cdnEndpoint !== undefined) {
       this.cdnEndpoint = options.cdnEndpoint;
@@ -129,21 +118,8 @@ export class FDSClientConfiguration {
     return this.uriSuffix === URI_HOST_STYLE_COM_SUFFIX;
   }
 
-  /** Whether the endpoint points at the internal (`*.xiaomi.net`) network. */
-  isInternalEndpoint(): boolean {
-    return this.uriSuffix === URI_NET_SUFFIX;
-  }
-
   isHttpsEnabled(): boolean {
     return this.enableHttps;
-  }
-
-  isCdnEnabledForUpload(): boolean {
-    return this.cdnForUpload;
-  }
-
-  isCdnEnabledForDownload(): boolean {
-    return this.cdnForDownload;
   }
 
   /** The service base URI used for signing and pre-signed URIs. */
@@ -154,24 +130,6 @@ export class FDSClientConfiguration {
   /** The CDN base URI used for CDN pre-signed URIs. */
   getCdnBaseUri(): string {
     return this.explicitCdnBaseUri ?? this.buildBaseUri(true);
-  }
-
-  /** The base URI used for uploads, honoring {@link isCdnEnabledForUpload}. */
-  getUploadBaseUri(): string {
-    return this.buildBaseUri(this.cdnForUpload);
-  }
-
-  /** The base URI used for downloads, honoring {@link isCdnEnabledForDownload}. */
-  getDownloadBaseUri(): string {
-    return this.buildBaseUri(this.cdnForDownload);
-  }
-
-  /**
-   * The base URI used for private downloads. Internal endpoints never use the
-   * CDN, mirroring the Java SDK.
-   */
-  getPrivateDownloadBaseUri(): string {
-    return this.isInternalEndpoint() ? this.getBaseUri() : this.getDownloadBaseUri();
   }
 
   private buildBaseUri(enableCdn: boolean): string {
