@@ -67,7 +67,11 @@ export class GalaxyFDSSignerError extends Error {
   /** The option or input field at fault, e.g. `'bucket'` or `'expiresIn'`. */
   readonly field?: string;
 
-  /** @internal Errors are created by the library only. */
+  /**
+   * Errors are created by the library only; the signature is kept in the
+   * published declarations so the type stays honest (an omitted constructor
+   * would silently fall back to `Error`'s optional-argument one).
+   */
   constructor(
     code: GalaxyFDSSignerErrorCode,
     message: string,

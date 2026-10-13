@@ -9,10 +9,16 @@
   "types": "./dist/index.d.ts",
   "exports": {
     ".": {
-      "types": "./dist/index.d.ts",
-      "import": "./dist/index.js",
-      "require": "./dist/index.cjs"
-    }
+      "import": {
+        "types": "./dist/index.d.ts",
+        "default": "./dist/index.js"
+      },
+      "require": {
+        "types": "./dist/index.d.cts",
+        "default": "./dist/index.cjs"
+      }
+    },
+    "./package.json": "./package.json"
   },
   "files": [
     "dist",
@@ -31,7 +37,8 @@
     "lint:fix": "eslint . --fix",
     "docs": "node scripts/generate-docs.mjs",
     "format": "prettier --write \"src/**/*.ts\" \"test/**/*.ts\"",
-    "prepublishOnly": "npm run typecheck && npm run lint && npm test && npm run build"
+    "check:package": "publint && attw --pack .",
+    "prepublishOnly": "npm run typecheck && npm run lint && npm test && npm run build && npm run check:package"
   },
   "keywords": [
     "xiaomi",
@@ -51,9 +58,14 @@
     "type": "git",
     "url": "git+https://github.com/chengww5217/galaxy-fds-signer.git"
   },
+  "publishConfig": {
+    "access": "public"
+  },
   "devDependencies": {
+    "@arethetypeswrong/cli": "^0.18.5",
     "@edge-runtime/vm": "5.0.0",
     "@eslint/js": "^10.0.1",
+    "@microsoft/api-extractor": "^7.59.4",
     "@types/node": "^26.6.5",
     "@typescript-eslint/eslint-plugin": "^8.71.1",
     "@typescript-eslint/parser": "^8.71.1",
@@ -61,6 +73,7 @@
     "eslint-config-prettier": "^10.1.8",
     "miniflare": "4.20260730.0",
     "prettier": "^3.9.10",
+    "publint": "^0.3.25",
     "typescript": "^6.0.3",
     "vite": "^8.3.4",
     "vite-plugin-dts": "^5.1.2",

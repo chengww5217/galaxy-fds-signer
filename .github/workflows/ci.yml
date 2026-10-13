@@ -47,3 +47,8 @@ jobs:
 
       - name: Build
         run: npm run build
+
+      # publint checks the `exports`/`main`/`files` wiring, attw checks that the
+      # declarations resolve and are correct in every TS resolution mode.
+      - name: Check published package
+        run: npm run check:package

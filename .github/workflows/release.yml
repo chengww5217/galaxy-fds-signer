@@ -1,0 +1,38 @@
+name: Release
+
+on:
+  release:
+    types: [published]
+
+permissions:
+  contents: read
+  # Required for npm provenance: npm exchanges this OIDC token for a signed
+  # attestation linking the tarball to this workflow run and commit.
+  id-token: write
+
+jobs:
+  npm:
+    name: Publish to npm
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24.x
+          cache: npm
+          registry-url: https://registry.npmjs.org
+
+      - run: npm ci
+
+      # `prepublishOnly` runs typecheck, lint, tests, build and
+      # publint/attw, so nothing reaches the registry unverified.
+      #
+      # Authentication uses npm trusted publishing (OIDC), so no long-lived
+      # NPM_TOKEN secret is stored. Configure it once on npmjs.com:
+      #   package → Settings → Trusted Publisher → GitHub Actions
+      #                         → repository `chengww5217/galaxy-fds-signer`
+      #                         → workflow `release.yml`
+      # With a public repository, npm enables provenance automatically.
+      - name: Publish
+        run: npm publish
