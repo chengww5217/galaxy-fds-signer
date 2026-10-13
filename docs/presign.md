@@ -38,11 +38,12 @@ export default {
       accessId: env.FDS_ACCESS_ID,
       accessSecret: env.FDS_ACCESS_SECRET,
       endpoint: 'cnbj1.fds.api.xiaomi.com',
+      bucket: 'uploads', // reused by every presign call; override per call if needed
     });
     const { name } = await request.json<{ name: string }>();
     // Authorize the caller and validate `name` here.
     try {
-      return Response.json(await signer.presign({ method: 'PUT', bucket: 'uploads', object: name }));
+      return Response.json(await signer.presign({ method: 'PUT', object: name }));
     } catch (e) {
       // Input errors come from the caller's request: return the code so the
       // client can tell them apart. Pick whatever status your API uses.

@@ -14,6 +14,7 @@ const CODE_KINDS = {
   INVALID_CREDENTIALS: 'config',
   UNSUPPORTED_ALGORITHM: 'config',
   INVALID_ENDPOINT: 'config',
+  INVALID_BUCKET_OPTION: 'config',
   CDN_NOT_CONFIGURED: 'config',
   UNSUPPORTED_METHOD: 'input',
   INVALID_HEADERS: 'input',

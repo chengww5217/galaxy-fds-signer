@@ -8,8 +8,14 @@
  * ```ts
  * import { createSigner } from 'galaxy-fds-signer';
  *
- * const signer = createSigner({ accessId, accessSecret, endpoint: 'cnbj1.fds.api.xiaomi.com' });
- * const req = await signer.signRequest({ method: 'PUT', bucket: 'b', object: 'a.png' });
+ * const signer = createSigner({
+ *   accessId,
+ *   accessSecret,
+ *   endpoint: 'cnbj1.fds.api.xiaomi.com',
+ *   bucket: 'b',
+ * });
+ * // `bucket` is optional on the request; pass one to override the configured default.
+ * const req = await signer.signRequest({ method: 'PUT', object: 'a.png' });
  * await fetch(req.url, { ...req, body });
  * ```
  */

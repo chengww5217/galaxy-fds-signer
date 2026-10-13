@@ -113,6 +113,20 @@ describe('error codes', () => {
       () => createSigner({ ...OPTIONS, algorithm: 'HmacSHA512' as never }),
     ],
     [
+      'INVALID_BUCKET_OPTION',
+      'config',
+      'bucket',
+      'default bucket with a slash',
+      () => createSigner({ ...OPTIONS, bucket: 'a/b' }),
+    ],
+    [
+      'INVALID_BUCKET_OPTION',
+      'config',
+      'bucket',
+      'non-DNS default bucket with virtual addressing',
+      () => createSigner({ ...OPTIONS, endpoint: 'cnbj1.mi-fds.com', bucket: 'a.b' }),
+    ],
+    [
       'INVALID_ENDPOINT',
       'config',
       'endpoint',

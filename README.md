@@ -25,9 +25,15 @@ Requires Node.js >= 22, or any runtime with `crypto.subtle`.
 ```ts
 import { createSigner } from 'galaxy-fds-signer';
 
-const signer = createSigner({ accessId, accessSecret, endpoint: 'cnbj1.fds.api.xiaomi.com' });
+// Set `bucket` once to reuse it; pass `bucket` in the input to override it.
+const signer = createSigner({
+  accessId,
+  accessSecret,
+  endpoint: 'cnbj1.fds.api.xiaomi.com',
+  bucket: 'my-bucket',
+});
 
-const req = await signer.signRequest({ method: 'PUT', bucket: 'my-bucket', object: 'cat.png' });
+const req = await signer.signRequest({ method: 'PUT', object: 'cat.png' });
 await fetch(req.url, { ...req, body: file });
 ```
 

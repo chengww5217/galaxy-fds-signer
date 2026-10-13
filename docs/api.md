@@ -35,6 +35,7 @@ Validates the options and returns a frozen signer object. Any configuration erro
 | `accessId` | `string` | required | Access key id. |
 | `accessSecret` | `string` | required | Secret access key. It is kept in a closure and never exposed on the signer, in logs or in results. |
 | `algorithm` | `'HmacSHA1' \| 'HmacSHA256' \| 'HmacMD5'` | `'HmacSHA1'` | HMAC algorithm. |
+| `bucket` | `string` | — | Default bucket for every request that does not name one itself. An input `bucket` overrides it. It must not contain `/`, and on virtual-hosted (`.mi-fds.com`) endpoints it must be a single DNS label. |
 | `endpoint` | `string` | — | Service host, optionally with a port. The host must end with `.fds.api.xiaomi.com` (public), `-fds.api.xiaomi.net` (internal) or `.mi-fds.com` (virtual-hosted). The region name is taken from the prefix. |
 | `regionName` | `string` | — | Used only when `endpoint` is omitted. Sets the endpoint to `{regionName}.fds.api.xiaomi.com`. |
 | `cdnEndpoint` | `string` | `cdn.{region}.fds.api.mi-img.com` | CDN host for `cdn: true`. No CDN host is derived for `*.mi-fds.com` endpoints, so set this yourself to use the CDN there. |
@@ -43,6 +44,8 @@ Validates the options and returns a frozen signer object. Any configuration erro
 | `cdnBaseUri` | `string` | — | Explicit CDN base URL. It takes precedence over `cdnEndpoint`. |
 
 Without `endpoint`, `regionName` and `baseUri`, the signer uses `http://files.fds.api.xiaomi.com/`, and `http://cdn.fds.api.xiaomi.com/` for the CDN.
+
+Set `bucket` once to have every `signRequest` and `presign` call use it; pass `bucket` in the input to override it for a single call. Without it, `presign` still requires a `bucket`, and `signRequest` needs one whenever `object` or `subResources` is given.
 
 With a `*.mi-fds.com` endpoint, URLs use virtual-hosted addressing: `https://{bucket}.{endpoint}/{bucket}/{object}`. The bucket stays in the path as well, as in the Java SDK. In this mode the bucket must be a single DNS label: letters, digits and inner hyphens, at most 63 characters.
 
@@ -73,7 +76,7 @@ Give either a resource target (`bucket` / `object` / `subResources` / `cdn` / `q
 | Field | Type | Default | Description |
 | --- | --- | --- | --- |
 | `method` | `'GET' \| 'HEAD' \| 'PUT' \| 'POST' \| 'DELETE'`, upper or lower case | `'GET'` | HTTP method. It is normalized to upper case. |
-| `bucket` | `string` | — | Bucket name. Omit it only for service-level requests such as listing buckets. It must not contain `/`. |
+| `bucket` | `string` | configured `bucket` | Bucket name. Omit it to use the signer's `bucket` option; when none is configured, omit it only for service-level requests such as listing buckets. It must not contain `/`. |
 | `object` | `string` | — | Object name, e.g. `photos/2024/cat.png`. It is percent-encoded for you; spaces and non-ASCII characters are fine. It requires `bucket`. |
 | `subResources` | [`SubResources`](#sub-resources) | — | Signed query parameters, e.g. `['acl']` or `{ uploadId, partNumber: 1 }`. They require `bucket`. |
 | `query` | `Record<string, string \| number>` | — | Extra query parameters, URL-encoded and appended after the sub-resources. They are sent but not signed, as in the Java SDK. Use `''` for a bare flag (`{ cors: '' }` produces `?cors=`). |
@@ -116,7 +119,7 @@ Builds a URL that carries its credentials in the query string (`GalaxyAccessKeyI
 | Field | Type | Default | Description |
 | --- | --- | --- | --- |
 | `method` | as above | `'GET'` | The HTTP method the URL will be used with. It is signed, so a URL signed for `GET` does not work for `PUT`. |
-| `bucket` | `string` | required | Bucket name. |
+| `bucket` | `string` | configured `bucket` | Bucket name. Required only when the signer has no `bucket` option. |
 | `object` | `string` | — | Object name. Omit it for bucket-level operations. |
 | `subResources` | [`SubResources`](#sub-resources) | — | Signed sub-resources, e.g. `['acl']` or `{ uploadId, partNumber }`. |
 | `cdn` | `boolean` | `false` | Pre-sign a CDN URL. |
@@ -226,6 +229,7 @@ class GalaxyFDSSignerError extends Error {
 | `INVALID_CREDENTIALS` | config | `accessId`, `accessSecret` | Missing, empty or non-string credentials |
 | `UNSUPPORTED_ALGORITHM` | config | `algorithm` | Unknown `algorithm` |
 | `INVALID_ENDPOINT` | config | `endpoint`, `baseUri`, `cdnBaseUri` | An empty `endpoint` or one with an unrecognized suffix, or a `baseUri` / `cdnBaseUri` that is not an absolute http(s) URL |
+| `INVALID_BUCKET_OPTION` | config | `bucket` | The configured `bucket` is empty, contains `/`, or is not a DNS label on a `*.mi-fds.com` endpoint |
 | `CDN_NOT_CONFIGURED` | config | `cdn` | `cdn: true` with no CDN endpoint, e.g. `*.mi-fds.com` without `cdnEndpoint` |
 | `UNSUPPORTED_METHOD` | input | `method` | Unsupported `method` |
 | `INVALID_HEADERS` | input | `headers` | A repeated header name, a non-string name or value, or headers in an unsupported shape |

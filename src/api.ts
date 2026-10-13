@@ -1,7 +1,12 @@
 import { FDSEndpointConfiguration, type FDSEndpointOptions } from './config.js';
 import { Common } from './common.js';
 import { HttpMethod, SignAlgorithm, toHttpMethod, toSignAlgorithm, XiaomiHeader } from './enums.js';
-import { GalaxyFDSSignerError, requireString, wrapErrors } from './errors.js';
+import {
+  GalaxyFDSSignerError,
+  type GalaxyFDSSignerErrorCode,
+  requireString,
+  wrapErrors,
+} from './errors.js';
 import {
   formatSubResources,
   HeaderMultiMap,
@@ -20,11 +25,22 @@ export interface SignerOptions extends FDSEndpointOptions {
   accessSecret: string;
   /** Signature algorithm; defaults to {@link SignAlgorithm.HmacSHA1}. */
   algorithm?: SignAlgorithm;
+  /**
+   * Default bucket for every request that does not name one itself, so it is
+   * configured once instead of on each `signRequest` / `presign` call. An input
+   * `bucket` still overrides it. It must not contain `/`, and on virtual-hosted
+   * (`*.mi-fds.com`) endpoints it must be a single DNS label.
+   */
+  bucket?: string;
 }
 
 /** Identifies an FDS resource; the URL is built from the configured endpoint. */
 export interface ResourceTarget {
-  /** Bucket name. Omit only for service-level requests (e.g. listing buckets). */
+  /**
+   * Bucket name, overriding the signer's `bucket` option for this request.
+   * Omit it to use the configured default, or, when none is configured, for
+   * service-level requests (e.g. listing buckets).
+   */
   bucket?: string;
   /** Object name, e.g. `path/to/file.png`. Encoded by the library. */
   object?: string;
@@ -68,9 +84,9 @@ export type SignRequestInput = (ResourceTarget | UrlTarget) & {
 };
 
 /** Input of {@link FdsSigner.presign}. */
-export type PresignInput = Omit<ResourceTarget, 'bucket'> & {
-  /** Bucket name. */
-  bucket: string;
+export type PresignInput = ResourceTarget & {
+  /** Overrides the signer's `bucket` option; required when the signer has none. */
+  bucket?: string;
   /** HTTP method the URL will be used with; defaults to GET. Case-insensitive. */
   method?: HttpMethod | Lowercase<HttpMethod>;
   /** Absolute expiration (`Date` or epoch milliseconds). Takes precedence over `expiresIn`. */
@@ -146,15 +162,12 @@ export function createSigner(options: SignerOptions): FdsSigner {
   const accessSecret = requireString(options.accessSecret, 'accessSecret', 'INVALID_CREDENTIALS');
   const algorithm = toSignAlgorithm(options.algorithm ?? SignAlgorithm.HmacSHA1);
   const config = new FDSEndpointConfiguration(options);
+  // Fail fast on a bad default bucket rather than on the first request that uses it.
+  const defaultBucket = resolveDefaultBucket(options.bucket, config);
 
-  const resolveUrl = (target: ResourceTarget, extraQuery: string[], requireBucket: boolean) => {
-    const { bucket, object = '', cdn = false } = target;
+  const resolveUrl = (target: ResourceTarget, bucket: string | undefined, extraQuery: string[]) => {
+    const { object = '', cdn = false } = target;
     if (bucket === undefined) {
-      if (requireBucket) {
-        throw new GalaxyFDSSignerError('INVALID_BUCKET', 'bucket must be a non-empty string', {
-          field: 'bucket',
-        });
-      }
       if (object !== '' || target.subResources !== undefined) {
         throw new GalaxyFDSSignerError(
           'INVALID_BUCKET',
@@ -196,7 +209,7 @@ export function createSigner(options: SignerOptions): FdsSigner {
       }
       url = requireString(input.url, 'url', 'INVALID_URL');
     } else {
-      url = resolveUrl(input, extraQuery, false);
+      url = resolveUrl(input, input.bucket ?? defaultBucket, extraQuery);
     }
 
     if (headers[Common.DATE] === undefined && headers[XiaomiHeader.DATE] === undefined) {
@@ -226,13 +239,19 @@ export function createSigner(options: SignerOptions): FdsSigner {
     const method = toHttpMethod(input?.method ?? HttpMethod.GET);
     const headers = toHeaderRecord(input.headers);
     const expiresAt = resolveExpiration(input.expires, input.expiresIn);
+    const bucket = input.bucket ?? defaultBucket;
+    if (bucket === undefined) {
+      throw new GalaxyFDSSignerError('INVALID_BUCKET', 'bucket must be a non-empty string', {
+        field: 'bucket',
+      });
+    }
     // Validate the target (and build the base URL) before signing.
-    const resourceUrl = resolveUrl(input, [], true);
+    const resourceUrl = resolveUrl(input, bucket, []);
     const { origin } = new URL(resourceUrl);
 
     const url = await Signer.generatePresignedUri({
       baseUri: origin + '/',
-      bucketName: input.bucket,
+      bucketName: bucket,
       objectName: input.object ?? '',
       subResources: input.subResources,
       expiration: expiresAt,
@@ -296,12 +315,46 @@ function resolveExpiration(
   return millis;
 }
 
-function validateBucket(bucket: unknown): asserts bucket is string {
-  requireString(bucket, 'bucket', 'INVALID_BUCKET');
+/**
+ * Validates the signer's default bucket once, at configuration time, so a
+ * mistake surfaces from `createSigner` instead of from every request. The
+ * code is `INVALID_BUCKET_OPTION` (config) to keep it apart from the
+ * `INVALID_BUCKET` (input) a request raises.
+ */
+function resolveDefaultBucket(
+  bucket: string | undefined,
+  config: FDSEndpointConfiguration,
+): string | undefined {
+  if (bucket === undefined) {
+    return undefined;
+  }
+  validateBucket(bucket, 'INVALID_BUCKET_OPTION');
+  if (config.shouldUseVirtualAddressing()) {
+    assertDnsLabel(bucket, 'INVALID_BUCKET_OPTION');
+  }
+  return bucket;
+}
+
+function validateBucket(
+  bucket: unknown,
+  code: GalaxyFDSSignerErrorCode = 'INVALID_BUCKET',
+): asserts bucket is string {
+  requireString(bucket, 'bucket', code);
   if ((bucket as string).includes('/')) {
+    throw new GalaxyFDSSignerError(code, `bucket must not contain "/": ${bucket as string}`, {
+      field: 'bucket',
+    });
+  }
+}
+
+function assertDnsLabel(bucket: string, code: GalaxyFDSSignerErrorCode): void {
+  if (!DNS_LABEL.test(bucket)) {
+    // The bucket becomes a subdomain: anything but a single DNS label
+    // (e.g. "a.b", "x@evil.com") would change the target host.
     throw new GalaxyFDSSignerError(
-      'INVALID_BUCKET',
-      `bucket must not contain "/": ${bucket as string}`,
+      code,
+      `bucket ${JSON.stringify(bucket)} cannot be used with virtual-hosted addressing: ` +
+        'it must be a DNS label (letters, digits and inner hyphens, at most 63 characters)',
       { field: 'bucket' },
     );
   }
@@ -373,15 +426,6 @@ function applyVirtualAddressing(
   if (url.hostname !== endpoint.split(':')[0].toLowerCase()) {
     return baseUri;
   }
-  if (!DNS_LABEL.test(bucket)) {
-    // The bucket becomes a subdomain: anything but a single DNS label
-    // (e.g. "a.b", "x@evil.com") would change the target host.
-    throw new GalaxyFDSSignerError(
-      'INVALID_BUCKET',
-      `bucket ${JSON.stringify(bucket)} cannot be used with virtual-hosted addressing: ` +
-        'it must be a DNS label (letters, digits and inner hyphens, at most 63 characters)',
-      { field: 'bucket' },
-    );
-  }
+  assertDnsLabel(bucket, 'INVALID_BUCKET');
   return `${url.protocol}//${bucket}.${url.host}/`;
 }

@@ -264,6 +264,40 @@ describe('presign', () => {
   });
 });
 
+describe('default bucket', () => {
+  const withBucket = createSigner({ ...OPTIONS, bucket: 'my-bucket' });
+
+  it('signRequest falls back to the configured bucket', async () => {
+    const implicit = await withBucket.signRequest({ object: 'o', date: DATE });
+    const explicit = await signer.signRequest({ bucket: 'my-bucket', object: 'o', date: DATE });
+    expect(implicit).toEqual(explicit);
+  });
+
+  it('signRequest lets a bucket override the configured one', async () => {
+    const req = await withBucket.signRequest({ bucket: 'other', object: 'o', date: DATE });
+    expect(req.url).toBe('https://cnbj1.fds.api.xiaomi.com/other/o');
+  });
+
+  it('presign falls back to the configured bucket', async () => {
+    const implicit = await withBucket.presign({ object: 'o', expires: FUTURE });
+    const explicit = await signer.presign({ bucket: 'my-bucket', object: 'o', expires: FUTURE });
+    expect(implicit).toEqual(explicit);
+  });
+
+  it('presign lets a bucket override the configured one', async () => {
+    const req = await withBucket.presign({ bucket: 'other', object: 'o', expires: FUTURE });
+    expect(new URL(req.url).pathname).toBe('/other/o');
+  });
+
+  it('signs a service-level request through an explicit url', async () => {
+    const req = await withBucket.signRequest({
+      url: 'https://cnbj1.fds.api.xiaomi.com/',
+      date: DATE,
+    });
+    expect(req.url).toBe('https://cnbj1.fds.api.xiaomi.com/');
+  });
+});
+
 describe('createSigner', () => {
   it.each([
     ['no options', undefined],
@@ -272,6 +306,7 @@ describe('createSigner', () => {
     ['an unknown algorithm', { ...OPTIONS, algorithm: 'HmacSHA512' }],
     ['an unrecognized endpoint', { ...OPTIONS, endpoint: 'example.com' }],
     ['an invalid baseUri', { ...OPTIONS, baseUri: 'nope' }],
+    ['an invalid default bucket', { ...OPTIONS, bucket: 'a/b' }],
   ])('throws synchronously for %s', (_name, options) => {
     expect(() => createSigner(options as never)).toThrow(GalaxyFDSSignerError);
   });
