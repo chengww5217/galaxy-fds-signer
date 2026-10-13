@@ -1,3 +1,5 @@
+import { GalaxyFDSClientException } from './errors.js';
+
 /**
  * HTTP request methods supported by Galaxy FDS.
  *
@@ -79,3 +81,35 @@ export const XiaomiHeader = {
 
 /** Any Xiaomi-defined HTTP header name. */
 export type XiaomiHeader = (typeof XiaomiHeader)[keyof typeof XiaomiHeader];
+
+const HTTP_METHOD_SET: ReadonlySet<string> = new Set(Object.values(HttpMethod));
+
+/**
+ * Normalizes an HTTP method to upper case (as `fetch` does) and checks that
+ * Galaxy FDS supports it.
+ *
+ * @throws GalaxyFDSClientException for unsupported or non-string methods.
+ */
+export function toHttpMethod(method: unknown): HttpMethod {
+  const upper = typeof method === 'string' ? method.toUpperCase() : undefined;
+  if (upper === undefined || !HTTP_METHOD_SET.has(upper)) {
+    throw new GalaxyFDSClientException(
+      `unsupported HTTP method: ${String(method)} (expected one of ${[...HTTP_METHOD_SET].join(', ')})`,
+    );
+  }
+  return upper as HttpMethod;
+}
+
+/**
+ * Checks that `algorithm` is a supported {@link SignAlgorithm}.
+ *
+ * @throws GalaxyFDSClientException for unknown algorithms.
+ */
+export function toSignAlgorithm(algorithm: unknown): SignAlgorithm {
+  if (typeof algorithm !== 'string' || !Object.hasOwn(SIGN_ALGORITHM_DIGEST, algorithm)) {
+    throw new GalaxyFDSClientException(
+      `unsupported sign algorithm: ${String(algorithm)} (expected one of ${Object.keys(SIGN_ALGORITHM_DIGEST).join(', ')})`,
+    );
+  }
+  return algorithm as SignAlgorithm;
+}

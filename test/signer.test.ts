@@ -32,6 +32,26 @@ describe('Signer API', () => {
   });
 });
 
+describe('method and algorithm validation', () => {
+  it('normalizes a lower-case method to upper case', () => {
+    expect(Signer.signToBase64('get' as HttpMethod, URI, HEADERS, ACCESS_SECRET)).toBe(
+      Signer.signToBase64(HttpMethod.GET, URI, HEADERS, ACCESS_SECRET),
+    );
+  });
+
+  it.each(['PATCH', '', 42])('rejects unsupported method %j', (method) => {
+    expect(() => Signer.signToBase64(method as HttpMethod, URI, HEADERS, ACCESS_SECRET)).toThrow(
+      GalaxyFDSClientException,
+    );
+  });
+
+  it.each(['HmacSHA512', 'sha1', 'toString'])('rejects unsupported algorithm %j', (algorithm) => {
+    expect(() =>
+      Signer.signToBase64(HttpMethod.GET, URI, HEADERS, ACCESS_SECRET, algorithm as never),
+    ).toThrow(GalaxyFDSClientException);
+  });
+});
+
 describe('getAuthorizationHeader date requirement', () => {
   it.each([[{}], [{ 'content-type': 'text/plain' }]])(
     'rejects a request without date headers: %j',

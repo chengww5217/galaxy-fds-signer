@@ -6,6 +6,8 @@ import {
   SIGN_ALGORITHM_DIGEST,
   SignAlgorithm,
   SUB_RESOURCE_SET,
+  toHttpMethod,
+  toSignAlgorithm,
   XiaomiHeader,
 } from '../enums.js';
 import { GalaxyFDSClientException } from '../errors.js';
@@ -120,7 +122,7 @@ export const Signer = {
   ): Buffer {
     const headers = HeaderMultiMap.from(httpHeaders);
     const stringToSign = constructStringToSign(httpMethod, uri, headers);
-    const digest = SIGN_ALGORITHM_DIGEST[algorithm];
+    const digest = SIGN_ALGORITHM_DIGEST[toSignAlgorithm(algorithm)];
     return createHmac(digest, secretAccessKeyId).update(stringToSign, 'utf-8').digest();
   },
 
@@ -282,7 +284,7 @@ export function constructStringToSign(
   const headers = HeaderMultiMap.from(httpHeaders);
   const parts = parseUri(uri);
   let builder = '';
-  builder += httpMethod + '\n';
+  builder += toHttpMethod(httpMethod) + '\n';
   builder += headers.getFirst(Common.CONTENT_MD5) + '\n';
   builder += getContentType(headers) + '\n';
 
