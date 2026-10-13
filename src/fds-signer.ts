@@ -5,9 +5,15 @@ import {
   type GalaxyFDSCredential,
   toGalaxyFDSCredential,
 } from './credential.js';
-import { HttpMethod, SignAlgorithm, SubResource } from './enums.js';
+import { HttpMethod, SignAlgorithm } from './enums.js';
 import { GalaxyFDSSignerError } from './errors.js';
-import { HeaderMultiMap, type HttpHeaders, Signer, toExpiresMillis } from './auth/signer.js';
+import {
+  HeaderMultiMap,
+  type HttpHeaders,
+  Signer,
+  type SubResources,
+  toExpiresMillis,
+} from './auth/signer.js';
 
 /**
  * Options for constructing a {@link GalaxyFDSSigner}.
@@ -24,8 +30,8 @@ export interface GalaxyFDSSignerOptions extends FDSEndpointOptions {
 export interface PresignOptions {
   /** The HTTP method the pre-signed URI will be used with (defaults to GET). */
   method?: HttpMethod;
-  /** Optional sub-resource fragments (e.g. `["acl"]`). */
-  subResources?: Array<SubResource | string>;
+  /** Sub-resources, e.g. `['acl']` or `{ uploadId: 'abc', partNumber: 1 }`. */
+  subResources?: SubResources;
   /** Optional content type included in the signature. */
   contentType?: string;
   /** Optional content-md5 included in the signature. */
@@ -114,7 +120,7 @@ export class GalaxyFDSSigner {
     bucketName: string,
     objectName: string,
     expiration: Date | number,
-    { method = HttpMethod.GET, subResources = [], contentType, contentMD5 }: PresignOptions,
+    { method = HttpMethod.GET, subResources, contentType, contentMD5 }: PresignOptions,
   ): string {
     if (toExpiresMillis(expiration) <= Date.now()) {
       throw new GalaxyFDSSignerError('expiration must be in the future');
@@ -131,13 +137,11 @@ export class GalaxyFDSSigner {
       }
     }
 
-    const subResourceNames = subResources.map((s) => s.toString());
-
     return Signer.generatePresignedUri({
       baseUri: this.applyVirtualAddressing(baseUri, bucketName),
       bucketName,
       objectName,
-      subResources: subResourceNames,
+      subResources,
       expiration,
       method,
       accessId: this.credential.getGalaxyAccessId(),

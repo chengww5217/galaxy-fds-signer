@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import { HeaderMultiMap } from '../src/auth/signer.js';
-import { GalaxyFDSSignerError, HttpMethod, Signer } from '../src/index.js';
+import { GalaxyFDSSignerError, HttpMethod, Signer, type SubResources } from '../src/index.js';
 
 const ACCESS_ID = 'AKIDEXAMPLEACCESSID';
 const ACCESS_SECRET = 'wJalrXUtnFEMIK7MDENGbPxRfiCYEXAMPLEKEY';
@@ -64,6 +64,30 @@ describe('getAuthorizationHeader date requirement', () => {
     expect(
       Signer.getAuthorizationHeader(HttpMethod.GET, URI, headers, ACCESS_ID, ACCESS_SECRET),
     ).toMatch(/^Galaxy-V2 /);
+  });
+});
+
+describe('pre-signed sub-resources', () => {
+  const presign = (subResources: SubResources) =>
+    Signer.generatePresignedUri({
+      baseUri: 'http://files.fds.api.xiaomi.com/',
+      bucketName: 'b',
+      objectName: 'o',
+      subResources,
+      expiration: 1700000000000,
+      accessId: ACCESS_ID,
+      accessSecret: ACCESS_SECRET,
+    });
+
+  it('renders true as a bare name and skips false/undefined', () => {
+    expect(presign({ acl: true, metadata: false, uploadId: undefined })).toContain('/b/o?acl&');
+  });
+
+  it('rejects names that would not be covered by the signature', () => {
+    expect(() => presign({ foo: '1' } as SubResources)).toThrow(/unsupported sub-resource/);
+    expect(() => presign(['partNumber=1'] as unknown as SubResources)).toThrow(
+      GalaxyFDSSignerError,
+    );
   });
 });
 

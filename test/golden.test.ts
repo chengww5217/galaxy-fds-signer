@@ -7,6 +7,8 @@ import {
   HttpMethod,
   SignAlgorithm,
   Signer,
+  SubResource,
+  type SubResources,
 } from '../src/index.js';
 
 const ACCESS_ID = 'AKIDEXAMPLEACCESSID';
@@ -31,7 +33,7 @@ interface PresignCase {
   baseUri: string;
   bucketName: string;
   objectName: string;
-  subResources: string[];
+  subResources: SubResources;
   expiresMillis: number;
   httpMethod: HttpMethod;
   headers?: Array<[string, string]>;
@@ -295,12 +297,27 @@ const PRESIGN_CASES: PresignCase[] = [
     baseUri: 'http://files.fds.api.xiaomi.com/',
     bucketName: 'my-bucket',
     objectName: 'my-object',
-    subResources: ['metadata', 'acl'],
+    subResources: [SubResource.METADATA, SubResource.ACL],
     expiresMillis: 1700000000000,
     httpMethod: HttpMethod.GET,
     algorithm: SignAlgorithm.HmacSHA1,
     expected: {
       uri: 'http://files.fds.api.xiaomi.com/my-bucket/my-object?metadata&acl&GalaxyAccessKeyId=AKIDEXAMPLEACCESSID&Expires=1700000000000&Signature=boZSYK3WfKmpn71iqMWUiygl%2Bro%3D',
+    },
+  },
+  {
+    // Java 3.0.37 renders the value as `a/b%20c`; both forms decode to the
+    // same signed query `uploadId=a/b c`, so the signature is identical.
+    name: 'presign-with-subresource-values',
+    baseUri: 'http://files.fds.api.xiaomi.com/',
+    bucketName: 'my-bucket',
+    objectName: 'my-object',
+    subResources: { uploadId: 'a/b c', partNumber: 2 },
+    expiresMillis: 1700000000000,
+    httpMethod: HttpMethod.PUT,
+    algorithm: SignAlgorithm.HmacSHA1,
+    expected: {
+      uri: 'http://files.fds.api.xiaomi.com/my-bucket/my-object?uploadId=a%2Fb%20c&partNumber=2&GalaxyAccessKeyId=AKIDEXAMPLEACCESSID&Expires=1700000000000&Signature=vA4GmeJJDpHV4BoFNqLxE6Y472U%3D',
     },
   },
   {

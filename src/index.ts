@@ -13,7 +13,13 @@ export {
   type CredentialInput,
   BasicFDSCredential,
 } from './credential.js';
-export { Signer, type HttpHeaders, constructStringToSign } from './auth/signer.js';
+export {
+  Signer,
+  type HttpHeaders,
+  type PresignUriInput,
+  type SubResources,
+  constructStringToSign,
+} from './auth/signer.js';
 export { urlEncode } from './auth/utils.js';
 export { GalaxyFDSSigner, type GalaxyFDSSignerOptions, type PresignOptions } from './fds-signer.js';
 export { FDSEndpointConfiguration, type FDSEndpointOptions } from './config.js';

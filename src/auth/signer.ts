@@ -6,6 +6,7 @@ import {
   SIGN_ALGORITHM_DIGEST,
   SignAlgorithm,
   SUB_RESOURCE_SET,
+  SubResource,
   toHttpMethod,
   toSignAlgorithm,
   XiaomiHeader,
@@ -103,6 +104,47 @@ function isIterable(value: object): value is Iterable<readonly [string, string]>
   return typeof (value as { [Symbol.iterator]?: unknown })[Symbol.iterator] === 'function';
 }
 
+/**
+ * Sub-resources of a pre-signed URI, either as a list of value-less names
+ * (`['acl']`) or as a map of name to value
+ * (`{ uploadId: 'abc', partNumber: 1, acl: true }`). Values are URL-encoded;
+ * `true` renders the bare name, `false`/`undefined` omits it.
+ *
+ * Only {@link SubResource} names are accepted: other query parameters are not
+ * covered by the signature, so silently passing them along would be unsafe.
+ */
+export type SubResources =
+  ReadonlyArray<SubResource> | Partial<Record<SubResource, string | number | boolean | undefined>>;
+
+/** Renders {@link SubResources} as query fragments, validating the names. */
+export function formatSubResources(subResources: SubResources | undefined): string[] {
+  if (subResources === undefined) {
+    return [];
+  }
+  const entries: Array<[string, unknown]> = Array.isArray(subResources)
+    ? subResources.map((name) => [name, true])
+    : Object.entries(subResources);
+  const parts: string[] = [];
+  for (const [name, value] of entries) {
+    if (!SUB_RESOURCE_SET.has(name)) {
+      throw new GalaxyFDSSignerError(
+        `unsupported sub-resource: ${JSON.stringify(name)} (expected one of ${[...SUB_RESOURCE_SET].join(', ')})`,
+      );
+    }
+    if (value === undefined || value === false) {
+      continue;
+    }
+    if (value === true) {
+      parts.push(name);
+    } else if (typeof value === 'string' || typeof value === 'number') {
+      parts.push(`${name}=${urlEncode(String(value))}`);
+    } else {
+      throw new GalaxyFDSSignerError(`invalid value for sub-resource ${name}: ${String(value)}`);
+    }
+  }
+  return parts;
+}
+
 /** Parameters of {@link Signer.generatePresignedUri}. */
 export interface PresignUriInput {
   /** The service base URI, e.g. `http://files.fds.api.xiaomi.com/`. */
@@ -111,8 +153,8 @@ export interface PresignUriInput {
   bucketName: string;
   /** The object name; omit or leave empty for bucket-level resources. */
   objectName?: string;
-  /** Sub-resource query fragments (e.g. `["acl"]`). */
-  subResources?: string[];
+  /** Sub-resources to include in (and sign into) the query. */
+  subResources?: SubResources;
   /** Expiration time; a `Date` or epoch milliseconds. */
   expiration: Date | number;
   /** The HTTP method the URI will be used with (defaults to GET). */
@@ -216,6 +258,7 @@ export const Signer = {
       throw new GalaxyFDSSignerError('bucketName must be a non-empty string');
     }
     const expiresMillis = toExpiresMillis(expiration);
+    const subResourceParts = formatSubResources(subResources);
 
     try {
       const base = new URL(baseUri);
@@ -225,9 +268,7 @@ export const Signer = {
       // this URI and decodes the path back, so the signature is unaffected.
       const path = encodeUriPath('/' + bucketName + objectPart);
       const queryParts: string[] = [];
-      if (subResources?.length) {
-        queryParts.push(subResources.join('&'));
-      }
+      queryParts.push(...subResourceParts);
       queryParts.push(`${Common.GALAXY_ACCESS_KEY_ID}=${accessId}`);
       queryParts.push(`${Common.EXPIRES}=${expiresMillis}`);
       const query = queryParts.join('&');
