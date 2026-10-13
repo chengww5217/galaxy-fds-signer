@@ -47,9 +47,17 @@ export class HeaderMultiMap implements Iterable<[string, string]> {
     if (headers === undefined || headers === null) {
       return map;
     }
+    if (typeof headers !== 'object') {
+      throw new GalaxyFDSSignerError(
+        'headers must be an object, a Headers instance or a list of [name, value] pairs',
+      );
+    }
     if (isIterable(headers)) {
-      for (const [key, value] of headers) {
-        map.put(key, value);
+      for (const entry of headers) {
+        if (!Array.isArray(entry) || entry.length !== 2) {
+          throw new GalaxyFDSSignerError('header entries must be [name, value] pairs');
+        }
+        map.put(entry[0], entry[1]);
       }
       return map;
     }
@@ -66,7 +74,12 @@ export class HeaderMultiMap implements Iterable<[string, string]> {
   }
 
   put(key: string, value: string): void {
-    this.entriesList.push([key.toLowerCase(), String(value)]);
+    if (typeof key !== 'string' || key.length === 0 || typeof value !== 'string') {
+      throw new GalaxyFDSSignerError(
+        `invalid header ${JSON.stringify(key)}: names and values must be strings`,
+      );
+    }
+    this.entriesList.push([key.toLowerCase(), value]);
   }
 
   /** All (lower-cased key, value) entries in insertion order. */

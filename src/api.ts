@@ -174,6 +174,12 @@ export function createSigner(options: SignerOptions): FdsSigner {
 
     let url: string;
     if (input.url !== undefined) {
+      const mixed = (['bucket', 'object', 'subResources', 'cdn', 'query'] as const).filter(
+        (k) => (input as unknown as Record<string, unknown>)[k] !== undefined,
+      );
+      if (mixed.length > 0) {
+        throw new GalaxyFDSSignerError(`url cannot be combined with ${mixed.join(', ')}`);
+      }
       url = requireString(input.url, 'url');
     } else {
       url = resolveUrl(input, extraQuery, false);
@@ -226,16 +232,25 @@ export function createSigner(options: SignerOptions): FdsSigner {
   return Object.freeze({ accessId, signRequest, presign });
 }
 
-/** One-shot form of {@link FdsSigner.signRequest}. */
-export function signRequest(
+/**
+ * One-shot form of {@link FdsSigner.signRequest}. Configuration errors reject
+ * the returned promise.
+ */
+export async function signRequest(
   options: SignerOptions,
   input: SignRequestInput,
 ): Promise<SignedRequest> {
   return createSigner(options).signRequest(input);
 }
 
-/** One-shot form of {@link FdsSigner.presign}. */
-export function presign(options: SignerOptions, input: PresignInput): Promise<PresignedRequest> {
+/**
+ * One-shot form of {@link FdsSigner.presign}. Configuration errors reject the
+ * returned promise.
+ */
+export async function presign(
+  options: SignerOptions,
+  input: PresignInput,
+): Promise<PresignedRequest> {
   return createSigner(options).presign(input);
 }
 

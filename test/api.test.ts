@@ -151,6 +151,14 @@ describe('signRequest', () => {
     expect(req.url).toBe('https://cdn.cnbj1.fds.api.mi-img.com/b/o');
   });
 
+  it('one-shot helpers reject (not throw) on configuration errors', async () => {
+    const pending = signRequest({ accessId: '', accessSecret: 's' }, {});
+    await expect(pending).rejects.toThrow(GalaxyFDSSignerError);
+    await expect(presign({ accessId: '', accessSecret: 's' }, { bucket: 'b' })).rejects.toThrow(
+      GalaxyFDSSignerError,
+    );
+  });
+
   it('defaults to the public endpoint when none is configured', async () => {
     const req = await signRequest(
       { accessId: ACCESS_ID, accessSecret: ACCESS_SECRET },
@@ -175,6 +183,15 @@ describe('signRequest', () => {
     ['an unknown sub-resource', { bucket: 'b', subResources: { foo: 1 } }],
     ['an invalid date', { bucket: 'b', date: new Date(NaN) }],
     ['an invalid url', { url: 'not a url' }],
+    ['a relative url', { url: '/b/o' }],
+    ['url combined with bucket', { url: 'https://h/b/o', bucket: 'b' }],
+    ['url combined with query', { url: 'https://h/b/o', query: { a: 1 } }],
+    ['headers that are not an object', { headers: 42 }],
+    ['headers given as a string', { headers: 'content-type' }],
+    ['a non-string header value', { headers: { 'content-length': 5 } }],
+    ['malformed header pairs', { headers: [['a']] }],
+    ['a non-string object name', { bucket: 'b', object: 5 }],
+    ['a non-scalar sub-resource value', { bucket: 'b', subResources: { uploadId: {} } }],
   ])('rejects %s', async (_name, input) => {
     await expect(signer.signRequest(input as never)).rejects.toThrow(GalaxyFDSSignerError);
   });
