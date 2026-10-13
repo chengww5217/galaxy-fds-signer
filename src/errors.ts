@@ -10,3 +10,28 @@ export class GalaxyFDSSignerError extends Error {
     this.name = 'GalaxyFDSSignerError';
   }
 }
+
+/**
+ * Runs `fn`, re-throwing any non-{@link GalaxyFDSSignerError} as a
+ * {@link GalaxyFDSSignerError} with the original error as its cause.
+ */
+export function wrapErrors<T>(message: string, fn: () => T): T {
+  try {
+    return fn();
+  } catch (e) {
+    if (e instanceof GalaxyFDSSignerError) {
+      throw e;
+    }
+    throw new GalaxyFDSSignerError(`${message}: ${e instanceof Error ? e.message : String(e)}`, {
+      cause: e,
+    });
+  }
+}
+
+/** Throws unless `value` is a non-empty string. */
+export function requireString(value: unknown, name: string): string {
+  if (typeof value !== 'string' || value.length === 0) {
+    throw new GalaxyFDSSignerError(`${name} must be a non-empty string`);
+  }
+  return value;
+}

@@ -1,3 +1,4 @@
+import { tryParseUrl } from './auth/utils.js';
 import { Common } from './common.js';
 import { GalaxyFDSSignerError } from './errors.js';
 
@@ -106,8 +107,8 @@ export class FDSEndpointConfiguration {
       this.cdnEndpoint = undefined;
     }
 
-    this.explicitBaseUri = options.baseUri;
-    this.explicitCdnBaseUri = options.cdnBaseUri;
+    this.explicitBaseUri = validateBaseUri(options.baseUri, 'baseUri');
+    this.explicitCdnBaseUri = validateBaseUri(options.cdnBaseUri, 'cdnBaseUri');
   }
 
   /**
@@ -146,4 +147,14 @@ export class FDSEndpointConfiguration {
     }
     return (this.enableHttps ? URI_HTTPS_PREFIX : URI_HTTP_PREFIX) + host + '/';
   }
+}
+
+function validateBaseUri(uri: string | undefined, name: string): string | undefined {
+  if (
+    uri !== undefined &&
+    (typeof uri !== 'string' || !/^https?:$/.test(tryParseUrl(uri)?.protocol ?? ''))
+  ) {
+    throw new GalaxyFDSSignerError(`${name} must be an absolute http(s) URI: ${String(uri)}`);
+  }
+  return uri;
 }

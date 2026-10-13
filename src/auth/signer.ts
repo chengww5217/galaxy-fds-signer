@@ -11,7 +11,7 @@ import {
   toSignAlgorithm,
   XiaomiHeader,
 } from '../enums.js';
-import { GalaxyFDSSignerError } from '../errors.js';
+import { GalaxyFDSSignerError, requireString, wrapErrors } from '../errors.js';
 import { encodeUriPath, parseUri, parseUriParameters, urlEncode } from './utils.js';
 
 /**
@@ -187,10 +187,12 @@ export const Signer = {
     accessSecret: string,
     algorithm: SignAlgorithm = SignAlgorithm.HmacSHA1,
   ): Buffer {
-    const headers = HeaderMultiMap.from(httpHeaders);
-    const stringToSign = constructStringToSign(httpMethod, uri, headers);
-    const digest = SIGN_ALGORITHM_DIGEST[toSignAlgorithm(algorithm)];
-    return createHmac(digest, accessSecret).update(stringToSign, 'utf-8').digest();
+    return wrapErrors('failed to sign request', () => {
+      requireString(accessSecret, 'accessSecret');
+      const digest = SIGN_ALGORITHM_DIGEST[toSignAlgorithm(algorithm)];
+      const stringToSign = constructStringToSign(httpMethod, uri, httpHeaders);
+      return createHmac(digest, accessSecret).update(stringToSign, 'utf-8').digest();
+    });
   },
 
   /** Signs the request and returns the Base64-encoded signature. */
@@ -221,7 +223,8 @@ export const Signer = {
     accessSecret: string,
     algorithm: SignAlgorithm = SignAlgorithm.HmacSHA1,
   ): string {
-    const headers = HeaderMultiMap.from(httpHeaders);
+    requireString(accessKeyId, 'accessId');
+    const headers = wrapErrors('invalid headers', () => HeaderMultiMap.from(httpHeaders));
     if (
       !headers.has(Common.DATE) &&
       !headers.has(XiaomiHeader.DATE) &&
@@ -252,13 +255,12 @@ export const Signer = {
     algorithm = SignAlgorithm.HmacSHA1,
     headers: httpHeaders,
   }: PresignUriInput): string {
-    if (typeof bucketName !== 'string' || bucketName.length === 0) {
-      throw new GalaxyFDSSignerError('bucketName must be a non-empty string');
-    }
+    requireString(bucketName, 'bucketName');
+    requireString(accessId, 'accessId');
     const expiresMillis = toExpiresMillis(expiration);
     const subResourceParts = formatSubResources(subResources);
 
-    try {
+    return wrapErrors('failed to generate pre-signed URI', () => {
       const base = new URL(baseUri);
       const objectPart = objectName.length > 0 ? '/' + objectName : '';
 
@@ -282,9 +284,7 @@ export const Signer = {
         algorithm,
       );
       return `${encodedUri}&${Common.SIGNATURE}=${urlEncode(signature)}`;
-    } catch (e) {
-      throw new GalaxyFDSSignerError('Failed to generate pre-signed URI', { cause: e });
-    }
+    });
   },
 };
 

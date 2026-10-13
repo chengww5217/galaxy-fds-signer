@@ -1,3 +1,5 @@
+import { GalaxyFDSSignerError } from '../errors.js';
+
 /**
  * Utility helpers ported from
  * `com.xiaomi.infra.galaxy.fds.auth.signature.Utils` and the URL-encoding
@@ -22,6 +24,15 @@ export interface UriParts {
 // scheme://authority path ?query #fragment, kept verbatim (no normalization).
 const RAW_URI = /^([A-Za-z][A-Za-z0-9+.-]*):\/\/([^/?#]*)([^?#]*)(?:\?([^#]*))?(?:#.*)?$/;
 
+/** `new URL(s)`, or `null` when `s` is not a valid absolute URL. */
+export function tryParseUrl(s: string): URL | null {
+  try {
+    return new URL(s);
+  } catch {
+    return null;
+  }
+}
+
 /**
  * Parses a URI string into the components used while signing.
  *
@@ -31,10 +42,10 @@ const RAW_URI = /^([A-Za-z][A-Za-z0-9+.-]*):\/\/([^/?#]*)([^?#]*)(?:\?([^#]*))?(
  * U+FFFD.
  */
 export function parseUri(uri: string): UriParts {
-  const url = new URL(uri);
-  const raw = RAW_URI.exec(uri);
-  if (raw === null) {
-    throw new TypeError(`Invalid URL: ${uri}`);
+  const raw = typeof uri === 'string' ? RAW_URI.exec(uri) : null;
+  const url = raw === null ? null : tryParseUrl(uri);
+  if (raw === null || url === null) {
+    throw new GalaxyFDSSignerError(`invalid URI: ${String(uri)}`);
   }
   return {
     scheme: url.protocol.replace(/:$/, ''),
