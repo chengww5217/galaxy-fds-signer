@@ -234,7 +234,7 @@ class GalaxyFDSSignerError extends Error {
 | `INVALID_BUCKET_OPTION` | config | `bucket` | The configured `bucket` is empty, contains `/`, or is not a DNS label on a `*.mi-fds.com` endpoint |
 | `CDN_NOT_CONFIGURED` | config | `cdn` | `cdn: true` with no CDN endpoint, e.g. `*.mi-fds.com` without `cdnEndpoint` |
 | `UNSUPPORTED_METHOD` | input | `method` | Unsupported `method` |
-| `INVALID_INPUT` | input | `input` | The input object is missing or not an object |
+| `INVALID_INPUT` | input | `input`, `cdn` | The input object is missing or not an object, or `cdn` is not a boolean |
 | `INVALID_HEADERS` | input | `headers` | A repeated header name, a non-string or non-token name, a value with NUL / CR / LF / characters above U+00FF, or headers in an unsupported shape |
 | `MISSING_DATE` | input | `headers` | Neither `date` nor `x-xiaomi-date` (internal signing only; `signRequest` always adds one) |
 | `INVALID_BUCKET` | input | `bucket` | A missing `bucket` for `presign`, or for `object` / `subResources`; a bucket containing `/`; a bucket that is not a DNS label on a `*.mi-fds.com` endpoint |

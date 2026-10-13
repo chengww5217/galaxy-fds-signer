@@ -194,6 +194,13 @@ describe('error codes', () => {
       () => signer.presign(undefined as never),
     ],
     [
+      'INVALID_INPUT',
+      'input',
+      'cdn',
+      'non-boolean cdn',
+      () => signer.signRequest({ bucket: 'b', cdn: 'false' as never }),
+    ],
+    [
       'INVALID_HEADERS',
       'input',
       'headers',

@@ -184,6 +184,10 @@ export function createSigner(options: SignerOptions): FdsSigner {
 
   const resolveUrl = (target: ResourceTarget, bucket: string | undefined, extraQuery: string[]) => {
     const { object = '', cdn = false } = target;
+    if (typeof cdn !== 'boolean') {
+      // A truthy string such as 'false' would otherwise silently select the CDN.
+      throw new GalaxyFDSSignerError('INVALID_INPUT', 'cdn must be a boolean', { field: 'cdn' });
+    }
     if (bucket === undefined) {
       if (object !== '' || target.subResources !== undefined) {
         throw new GalaxyFDSSignerError(
