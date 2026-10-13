@@ -12,7 +12,7 @@ import { resolve } from 'node:path';
 
 import { EdgeVM } from '@edge-runtime/vm';
 import { Miniflare } from 'miniflare';
-import { build, type Rolldown } from 'vite';
+import { build } from 'tsdown';
 import { beforeAll, describe, expect, it } from 'vitest';
 
 import * as lib from '../src/index.js';
@@ -60,28 +60,33 @@ let iife = '';
 let expected: Record<string, unknown>;
 
 beforeAll(async () => {
-  const outputs = (await build({
-    configFile: false,
+  // Bundle with the real tsdown.config.ts, so the ESM tested here is the one
+  // that ships in dist/. Declarations and the publint/attw checks are left to
+  // `npm run build`; nothing is written, and dist/ is left alone. The IIFE is
+  // only for @edge-runtime/vm, which evaluates scripts rather than modules.
+  const { bundles } = await build({
+    config: resolve(import.meta.dirname, '../tsdown.config.ts'),
+    write: false,
+    clean: false,
+    dts: false,
+    publint: false,
+    attw: false,
     logLevel: 'silent',
-    build: {
-      write: false,
-      minify: false,
-      target: 'es2022',
-      lib: {
-        entry: resolve(import.meta.dirname, '../src/index.ts'),
-        name: 'GalaxyFDS',
-        formats: ['es', 'iife'],
-        fileName: (format) => `index.${format}.js`,
-      },
-    },
-  })) as Rolldown.RolldownOutput[];
-  const code = (format: string) =>
-    outputs
-      .flatMap((o) => o.output)
-      .find((c): c is Rolldown.OutputChunk => c.type === 'chunk' && c.fileName.includes(format))!
-      .code;
-  esm = code('.es.');
-  iife = code('.iife.');
+    format: ['esm', 'iife'],
+    globalName: 'GalaxyFDS',
+  });
+  const code = (format: string) => {
+    const chunk = bundles
+      .filter((b) => b.config.format === format)
+      .flatMap((b) => b.chunks)
+      .find((c) => c.type === 'chunk');
+    if (chunk?.type !== 'chunk') {
+      throw new Error(`tsdown emitted no ${format} chunk`);
+    }
+    return chunk.code;
+  };
+  esm = code('es');
+  iife = code('iife');
   expected = await probe(lib);
 }, 60_000);
 
@@ -100,12 +105,25 @@ describe('runtime portability', () => {
   });
 
   it('produces identical results on Cloudflare Workers (workerd)', async () => {
+    // Miniflare 5 takes the compiled Worker manifest directly: module names are
+    // the map keys, so the worker's `./index.js` import resolves within the
+    // manifest. The flat v4 `modules: [...]` shorthand is gone.
     const mf = new Miniflare({
-      modules: [
-        { type: 'ESModule', path: 'worker.js', contents: WORKER },
-        { type: 'ESModule', path: 'index.js', contents: esm },
+      workers: [
+        {
+          config: {
+            name: 'worker',
+            compatibilityDate: '2026-01-01',
+            manifest: {
+              mainModule: 'worker.js',
+              modules: {
+                'worker.js': { type: 'esm', contents: WORKER },
+                'index.js': { type: 'esm', contents: esm },
+              },
+            },
+          },
+        },
       ],
-      compatibilityDate: '2026-01-01',
     });
     try {
       const response = await mf.dispatchFetch('http://localhost/');

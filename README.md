@@ -8,7 +8,7 @@ Galaxy-V2 request signing and pre-signed URLs for [Xiaomi Galaxy FDS](https://gi
 
 - Runs on Node.js, Cloudflare Workers, Vercel Edge, Deno and Bun. It uses only Web-standard APIs, with no `node:*` or `Buffer`.
 - Covers all 57 operations of the official `galaxy-fds-sdk-java` client. URLs and signatures match the Java SDK byte-for-byte, checked by tests.
-- No runtime dependencies. Ships ESM, CommonJS and TypeScript declarations.
+- No runtime dependencies. Ships ESM and TypeScript declarations.
 
 > This package only signs requests; it does not perform any network I/O itself. The access secret must stay on the server or in an edge function. Hand out signed requests or pre-signed URLs to browsers, never the secret.
 

@@ -45,10 +45,8 @@ jobs:
       - name: Test
         run: npm test
 
+      # `tsdown` bundles the library and validates the packaged result with
+      # publint (exports/main/files wiring) and attw (declaration resolution in
+      # every TypeScript resolution mode).
       - name: Build
         run: npm run build
-
-      # publint checks the `exports`/`main`/`files` wiring, attw checks that the
-      # declarations resolve and are correct in every TS resolution mode.
-      - name: Check published package
-        run: npm run check:package
