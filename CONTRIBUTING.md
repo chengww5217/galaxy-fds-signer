@@ -1,6 +1,6 @@
 # Contributing
 
-Thanks for your interest in improving `galaxy-fds-sdk-nodejs`.
+Thanks for your interest in improving `galaxy-fds-signer`.
 
 ## Getting started
 
@@ -22,7 +22,7 @@ The published package runs on Node.js >= 18, but the development toolchain
   `test/utils.test.ts` together with your change.
 - Run `npm run typecheck` and `npm run lint` before opening a pull request.
 - Keep the package dependency-free at runtime; use Node.js built-ins only.
-- Use `undefined`, not `null`, for absent values in the SDK's own types: mark
+- Use `undefined`, not `null`, for absent values in the library's own types: mark
   optional properties and parameters with `?`, and normalize any `null` at the
   boundary immediately.
 - Follow Conventional Commits for commit messages (e.g. `feat:`, `fix:`,
@@ -30,5 +30,5 @@ The published package runs on Node.js >= 18, but the development toolchain
 
 ## Reporting issues
 
-Please include the SDK version, Node.js version, a minimal reproduction, and
+Please include the library version, Node.js version, a minimal reproduction, and
 the expected vs. actual signature or URI when reporting a signing discrepancy.

@@ -1,5 +1,5 @@
 /**
- * Galaxy FDS Node.js SDK.
+ * Galaxy FDS Node.js signer.
  *
  * Provides Galaxy-V2 request signing and pre-signed URI generation, ported from
  * the official Xiaomi `galaxy-fds-sdk-java`.

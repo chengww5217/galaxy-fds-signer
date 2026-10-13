@@ -29,6 +29,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- Renamed the published package from `galaxy-fds-sdk-nodejs` to
+  `galaxy-fds-signer` to reflect its server-side signing role.
 - `HeaderMultiMap` lookups are now case-sensitive, matching the Java SDK's
   Guava `LinkedListMultimap`. Previously they ignored case, so headers such as
   `Date` or `Content-Type` were signed even though the Java SDK only signs the

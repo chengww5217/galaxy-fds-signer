@@ -1,7 +1,7 @@
 {
-  "name": "galaxy-fds-sdk-nodejs",
+  "name": "galaxy-fds-signer",
   "version": "0.1.0",
-  "description": "Node.js SDK for Xiaomi Galaxy FDS (File Data Storage) — request signing and pre-signed URI generation, ported from the official Java SDK.",
+  "description": "Server-side Galaxy-V2 request signer and pre-signed URI generator for Xiaomi Galaxy FDS (File Data Storage), ported from the official Java SDK.",
   "type": "module",
   "sideEffects": false,
   "main": "./dist/index.cjs",
@@ -37,7 +37,7 @@
     "galaxy",
     "fds",
     "object-storage",
-    "sdk",
+    "signer",
     "signature",
     "presigned-url"
   ],
@@ -45,7 +45,7 @@
   "license": "Apache-2.0",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/chengww5217/galaxy-fds-sdk-nodejs.git"
+    "url": "git+https://github.com/chengww5217/galaxy-fds-signer.git"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",

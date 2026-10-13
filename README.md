@@ -1,14 +1,16 @@
-# galaxy-fds-sdk-nodejs
+# galaxy-fds-signer
 
-[![npm version](https://img.shields.io/npm/v/galaxy-fds-sdk-nodejs.svg)](https://www.npmjs.com/package/galaxy-fds-sdk-nodejs)
-[![CI](https://github.com/chengww5217/galaxy-fds-sdk-nodejs/actions/workflows/ci.yml/badge.svg)](https://github.com/chengww5217/galaxy-fds-sdk-nodejs/actions/workflows/ci.yml)
+[![npm version](https://img.shields.io/npm/v/galaxy-fds-signer.svg)](https://www.npmjs.com/package/galaxy-fds-signer)
+[![CI](https://github.com/chengww5217/galaxy-fds-signer/actions/workflows/ci.yml/badge.svg)](https://github.com/chengww5217/galaxy-fds-signer/actions/workflows/ci.yml)
 [![License](https://img.shields.io/badge/license-Apache--2.0-blue.svg)](./LICENSE)
 
-A Node.js / TypeScript SDK for [Xiaomi Galaxy FDS](https://docs.api.xiaomi.com/) (File Data Storage), focused on **Galaxy-V2 request signing** and **pre-signed URI generation**.
+A Node.js / TypeScript server-side signer for [Xiaomi Galaxy FDS](https://github.com/XiaoMi/galaxy-fds-sdk-java) (File Data Storage), focused on **Galaxy-V2 request signing** and **pre-signed URI generation**.
 
 It is a faithful port of the signing logic in the official [`galaxy-fds-sdk-java`](https://github.com/XiaoMi/galaxy-fds-sdk-java) (3.0.48). Signature output is verified byte-for-byte against the Java SDK via a golden test suite.
 
 > Scope: this package implements **authentication signing** and **pre-signed URIs** only. It performs no network I/O and does not include object upload/download, bucket management, multipart upload, or Kerberos. Use the generated `Authorization` header or pre-signed URI with any HTTP client.
+>
+> Intended to run **server-side** (for example inside a serverless function): signing requires the access secret, so never ship this to a browser or any other untrusted client. Who is allowed to sign which resource is the caller's responsibility.
 
 ## Features
 
@@ -27,7 +29,7 @@ It is a faithful port of the signing logic in the official [`galaxy-fds-sdk-java
 ## Installation
 
 ```bash
-npm install galaxy-fds-sdk-nodejs
+npm install galaxy-fds-signer
 ```
 
 ## Usage
@@ -35,7 +37,7 @@ npm install galaxy-fds-sdk-nodejs
 ### Generate an `Authorization` header
 
 ```ts
-import { GalaxyFDSClient, HttpMethod } from 'galaxy-fds-sdk-nodejs';
+import { GalaxyFDSClient, HttpMethod } from 'galaxy-fds-signer';
 
 // A plain { accessId, accessSecret } object works, as does any
 // GalaxyFDSCredential implementation such as BasicFDSCredential.
@@ -57,7 +59,7 @@ const authorization = client.getAuthorizationHeader(HttpMethod.GET, uri, headers
 ### Generate a pre-signed URI
 
 ```ts
-import { GalaxyFDSClient, SubResource } from 'galaxy-fds-sdk-nodejs';
+import { GalaxyFDSClient, SubResource } from 'galaxy-fds-signer';
 
 const client = new GalaxyFDSClient({
   accessId: 'your-access-id',
@@ -99,7 +101,7 @@ const client = new GalaxyFDSClient(credential, {
 `Signer` exposes the same primitives as the Java `Signer` class if you need them directly:
 
 ```ts
-import { Signer, HttpMethod, SignAlgorithm } from 'galaxy-fds-sdk-nodejs';
+import { Signer, HttpMethod, SignAlgorithm } from 'galaxy-fds-signer';
 
 const uri = 'http://files.fds.api.xiaomi.com/my-bucket/my-object';
 const headers = { date: new Date().toUTCString() };
@@ -122,7 +124,7 @@ const signature = Signer.signToBase64(
 | `PresignOptions` | Options-object form for the pre-signing methods |
 | `Signer` | Low-level signing primitives (`sign`, `signToBase64`, `getAuthorizationHeader`, `generatePresignedUri`) |
 | `HttpMethod`, `SignAlgorithm`, `SubResource`, `XiaomiHeader` | Constant maps with literal union types, ported from the Java SDK enums |
-| `GalaxyFDSClientException` | Error type thrown by the SDK |
+| `GalaxyFDSClientException` | Error type thrown by the library |
 | `calcMD5`, `urlEncode`, `getGMTDatetime`, `parseUri`, `parseUriParameters` | Signing utilities |
 
 ## How signing works

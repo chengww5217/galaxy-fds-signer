@@ -1,5 +1,5 @@
 /**
- * Error thrown by the Galaxy FDS SDK.
+ * Error thrown by the Galaxy FDS signer.
  *
  * Ported from `com.xiaomi.infra.galaxy.fds.client.exception.GalaxyFDSClientException`.
  * The optional {@link statusCode} carries an HTTP status when available.

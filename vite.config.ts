@@ -10,7 +10,7 @@ export default defineConfig({
       formats: ['es', 'cjs'],
       fileName: (format) => (format === 'es' ? 'index.js' : 'index.cjs'),
     },
-    // Keep Node built-ins external; this SDK has zero runtime dependencies.
+    // Keep Node built-ins external; this library has zero runtime dependencies.
     rollupOptions: {
       external: [/^node:/],
     },

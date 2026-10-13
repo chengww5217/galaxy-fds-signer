@@ -4,7 +4,7 @@ import { GalaxyFDSClientException } from './errors.js';
  * Galaxy FDS access credential.
  *
  * Ported from `com.xiaomi.infra.galaxy.fds.client.credential.GalaxyFDSCredential`.
- * Kerberos-related members are intentionally omitted because this SDK only
+ * Kerberos-related members are intentionally omitted because this library only
  * implements signature-based authentication.
  */
 export interface GalaxyFDSCredential {

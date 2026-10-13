@@ -6,7 +6,7 @@ import { GalaxyFDSClientException } from './errors.js';
  *
  * Ported from the URI-relevant subset of the Java SDK's
  * `com.xiaomi.infra.galaxy.fds.client.FDSClientConfiguration`. Only the
- * addressing-related options are implemented here; the Node SDK performs no
+ * addressing-related options are implemented here; the Node library performs no
  * network I/O, so timeouts, retries, connection pools and the like are out of
  * scope.
  */
