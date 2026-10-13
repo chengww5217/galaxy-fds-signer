@@ -68,13 +68,17 @@ describe('generatePresignedUri input validation', () => {
     expect(() => presign(1700000000000, '')).toThrow('bucketName');
   });
 
-  it.each([NaN, Infinity, -Infinity, new Date('not a date')])(
+  it.each([NaN, Infinity, -Infinity, new Date('not a date'), 1.5e12 + 0.5, '1700000000000'])(
     'rejects an invalid expiration: %s',
     (expiration) => {
-      expect(() => presign(expiration)).toThrow(GalaxyFDSClientException);
-      expect(() => presign(expiration)).toThrow('expiration');
+      expect(() => presign(expiration as number)).toThrow(GalaxyFDSClientException);
+      expect(() => presign(expiration as number)).toThrow('expiration');
     },
   );
+
+  it.each([0, -1, 1700000000])('rejects a non-millisecond expiration: %s', (expiration) => {
+    expect(() => presign(expiration)).toThrow(/milliseconds/);
+  });
 });
 
 describe('HeaderMultiMap', () => {

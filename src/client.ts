@@ -6,7 +6,8 @@ import {
   toGalaxyFDSCredential,
 } from './credential.js';
 import { HttpMethod, SignAlgorithm, SubResource } from './enums.js';
-import { HeaderMultiMap, type HttpHeaders, Signer } from './auth/signer.js';
+import { GalaxyFDSClientException } from './errors.js';
+import { HeaderMultiMap, type HttpHeaders, Signer, toExpiresMillis } from './auth/signer.js';
 
 /**
  * Options for constructing a {@link GalaxyFDSClient}.
@@ -193,6 +194,10 @@ export class GalaxyFDSClient {
     contentType?: string,
     contentMD5?: string,
   ): string {
+    if (toExpiresMillis(expiration) <= Date.now()) {
+      throw new GalaxyFDSClientException('expiration must be in the future');
+    }
+
     let headers: HeaderMultiMap | undefined;
     if (contentType !== undefined || contentMD5 !== undefined) {
       headers = new HeaderMultiMap();

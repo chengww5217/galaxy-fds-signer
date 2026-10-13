@@ -10,7 +10,7 @@ import {
 
 const ACCESS_ID = 'AKIDEXAMPLEACCESSID';
 const ACCESS_SECRET = 'wJalrXUtnFEMIK7MDENGbPxRfiCYEXAMPLEKEY';
-const EXPIRES = 1700000000000;
+const EXPIRES = 4102444800000; // 2100-01-01
 
 function newVirtualClient() {
   return new GalaxyFDSClient(new BasicFDSCredential(ACCESS_ID, ACCESS_SECRET), {

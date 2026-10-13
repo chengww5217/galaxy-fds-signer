@@ -12,6 +12,7 @@ import {
 
 const ACCESS_ID = 'AKIDEXAMPLEACCESSID';
 const ACCESS_SECRET = 'wJalrXUtnFEMIK7MDENGbPxRfiCYEXAMPLEKEY';
+const FUTURE = 4102444800000; // 2100-01-01
 
 function newClient() {
   return new GalaxyFDSClient(new BasicFDSCredential(ACCESS_ID, ACCESS_SECRET));
@@ -34,16 +35,16 @@ describe('GalaxyFDSClient', () => {
 
   it('defaults the pre-signed URI to the FDS base and GET', () => {
     const client = newClient();
-    const uri = client.generatePresignedUri('my-bucket', 'my-object', 1700000000000);
+    const uri = client.generatePresignedUri('my-bucket', 'my-object', FUTURE);
     expect(uri.startsWith(Common.DEFAULT_FDS_SERVICE_BASE_URI + 'my-bucket/my-object?')).toBe(true);
     expect(uri).toContain(`${Common.GALAXY_ACCESS_KEY_ID}=${ACCESS_ID}`);
-    expect(uri).toContain(`${Common.EXPIRES}=1700000000000`);
+    expect(uri).toContain(`${Common.EXPIRES}=${FUTURE}`);
     expect(uri).toContain(`${Common.SIGNATURE}=`);
   });
 
   it('accepts a Date expiration equivalently to epoch millis', () => {
     const client = newClient();
-    const millis = 1700000000000;
+    const millis = FUTURE;
     const fromDate = client.generatePresignedUri('b', 'o', new Date(millis));
     const fromMillis = client.generatePresignedUri('b', 'o', millis);
     expect(fromDate).toBe(fromMillis);
@@ -51,15 +52,20 @@ describe('GalaxyFDSClient', () => {
 
   it('includes a SubResource fragment in the pre-signed URI', () => {
     const client = newClient();
-    const uri = client.generatePresignedUri('b', 'o', 1700000000000, HttpMethod.GET, [
-      SubResource.ACL,
-    ]);
+    const uri = client.generatePresignedUri('b', 'o', FUTURE, HttpMethod.GET, [SubResource.ACL]);
     expect(uri).toContain('/b/o?acl&');
+  });
+
+  it('rejects an expiration in the past', () => {
+    const client = newClient();
+    expect(() => client.generatePresignedUri('b', 'o', Date.now() - 1000)).toThrow(
+      'expiration must be in the future',
+    );
   });
 
   it('uses the CDN base for generatePresignedCdnUri', () => {
     const client = newClient();
-    const uri = client.generatePresignedCdnUri('b', 'o', 1700000000000);
+    const uri = client.generatePresignedCdnUri('b', 'o', FUTURE);
     expect(uri.startsWith(Common.DEFAULT_CDN_SERVICE_URI)).toBe(true);
   });
 
@@ -67,7 +73,7 @@ describe('GalaxyFDSClient', () => {
     const client = new GalaxyFDSClient(new BasicFDSCredential(ACCESS_ID, ACCESS_SECRET), {
       baseUri: 'https://my.endpoint.example.com/',
     });
-    const uri = client.generatePresignedUri('b', 'o', 1700000000000);
+    const uri = client.generatePresignedUri('b', 'o', FUTURE);
     expect(uri.startsWith('https://my.endpoint.example.com/b/o?')).toBe(true);
   });
 
@@ -78,8 +84,8 @@ describe('GalaxyFDSClient', () => {
     expect(plain.getAuthorizationHeader(HttpMethod.GET, uri, headers)).toBe(
       newClient().getAuthorizationHeader(HttpMethod.GET, uri, headers),
     );
-    expect(plain.generatePresignedUri('b', 'o', 1700000000000)).toBe(
-      newClient().generatePresignedUri('b', 'o', 1700000000000),
+    expect(plain.generatePresignedUri('b', 'o', FUTURE)).toBe(
+      newClient().generatePresignedUri('b', 'o', FUTURE),
     );
   });
 
@@ -90,7 +96,7 @@ describe('GalaxyFDSClient', () => {
 
   it('supports an options object equivalent to the positional form', () => {
     const client = newClient();
-    const viaOptions = client.generatePresignedUri('b', 'o', 1700000000000, {
+    const viaOptions = client.generatePresignedUri('b', 'o', FUTURE, {
       method: HttpMethod.PUT,
       contentType: 'image/png',
       contentMD5: '1B2M2Y8AsgTpgAmY7PhCfg==',
@@ -98,7 +104,7 @@ describe('GalaxyFDSClient', () => {
     const viaPositional = client.generatePresignedUri(
       'b',
       'o',
-      1700000000000,
+      FUTURE,
       HttpMethod.PUT,
       [],
       'image/png',
@@ -109,22 +115,22 @@ describe('GalaxyFDSClient', () => {
 
   it('accepts a plain string as the method in the options object', () => {
     const client = newClient();
-    expect(client.generatePresignedUri('b', 'o', 1700000000000, { method: 'PUT' })).toBe(
-      client.generatePresignedUri('b', 'o', 1700000000000, HttpMethod.PUT),
+    expect(client.generatePresignedUri('b', 'o', FUTURE, { method: 'PUT' })).toBe(
+      client.generatePresignedUri('b', 'o', FUTURE, HttpMethod.PUT),
     );
   });
 
   it('accepts sub-resources in the options object', () => {
     const client = newClient();
-    expect(client.generatePresignedUri('b', 'o', 1700000000000, { subResources: ['acl'] })).toBe(
-      client.generatePresignedUri('b', 'o', 1700000000000, HttpMethod.GET, [SubResource.ACL]),
+    expect(client.generatePresignedUri('b', 'o', FUTURE, { subResources: ['acl'] })).toBe(
+      client.generatePresignedUri('b', 'o', FUTURE, HttpMethod.GET, [SubResource.ACL]),
     );
   });
 
   it('supports an options object for CDN pre-signing', () => {
     const client = newClient();
-    const viaOptions = client.generatePresignedCdnUri('b', 'o', 1700000000000, { method: 'HEAD' });
-    const viaPositional = client.generatePresignedCdnUri('b', 'o', 1700000000000, HttpMethod.HEAD);
+    const viaOptions = client.generatePresignedCdnUri('b', 'o', FUTURE, { method: 'HEAD' });
+    const viaPositional = client.generatePresignedCdnUri('b', 'o', FUTURE, HttpMethod.HEAD);
     expect(viaOptions).toBe(viaPositional);
   });
 });

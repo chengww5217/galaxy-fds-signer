@@ -10,6 +10,7 @@ import {
 
 const ACCESS_ID = 'AKIDEXAMPLEACCESSID';
 const ACCESS_SECRET = 'wJalrXUtnFEMIK7MDENGbPxRfiCYEXAMPLEKEY';
+const FUTURE = 4102444800000; // 2100-01-01
 
 describe('FDSClientConfiguration defaults', () => {
   it('falls back to the built-in base URIs', () => {
@@ -113,13 +114,13 @@ describe('GalaxyFDSClient endpoint options', () => {
 
   it('uses the endpoint-derived base URI for pre-signed URIs', () => {
     const client = new GalaxyFDSClient(credential, { endpoint: 'files.fds.api.xiaomi.com' });
-    const uri = client.generatePresignedUri('my-bucket', 'my-object', 1700000000000);
+    const uri = client.generatePresignedUri('my-bucket', 'my-object', FUTURE);
     expect(uri.startsWith('https://files.fds.api.xiaomi.com/my-bucket/my-object?')).toBe(true);
   });
 
   it('still defaults to the built-in base URI without endpoint options', () => {
     const client = new GalaxyFDSClient(credential);
-    const uri = client.generatePresignedUri('my-bucket', 'my-object', 1700000000000);
+    const uri = client.generatePresignedUri('my-bucket', 'my-object', FUTURE);
     expect(uri.startsWith(Common.DEFAULT_FDS_SERVICE_BASE_URI)).toBe(true);
   });
 

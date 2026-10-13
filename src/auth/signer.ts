@@ -197,12 +197,7 @@ export const Signer = {
     if (typeof bucketName !== 'string' || bucketName.length === 0) {
       throw new GalaxyFDSClientException('bucketName must be a non-empty string');
     }
-    const expiresMillis = expiration instanceof Date ? expiration.getTime() : expiration;
-    if (!Number.isFinite(expiresMillis)) {
-      throw new GalaxyFDSClientException(
-        'expiration must be a valid Date or a finite epoch time in milliseconds',
-      );
-    }
+    const expiresMillis = toExpiresMillis(expiration);
 
     try {
       const base = new URL(baseUri);
@@ -235,6 +230,34 @@ export const Signer = {
     }
   },
 };
+
+/**
+ * Smallest accepted expiration (2001-09-09T01:46:40Z). Anything below is
+ * almost certainly an epoch time in seconds passed by mistake.
+ */
+const MIN_EXPIRES_MILLIS = 1e12;
+
+/**
+ * Validates an expiration and returns it as integer epoch milliseconds.
+ *
+ * The value ends up verbatim in `Expires=` while the signature uses
+ * `parseInt`, so a fractional, zero or negative value would yield a URI whose
+ * signature does not match (or that is signed with the date line instead).
+ */
+export function toExpiresMillis(expiration: Date | number): number {
+  const millis = expiration instanceof Date ? expiration.getTime() : expiration;
+  if (typeof millis !== 'number' || !Number.isSafeInteger(millis)) {
+    throw new GalaxyFDSClientException(
+      'expiration must be a valid Date or an integer epoch time in milliseconds',
+    );
+  }
+  if (millis < MIN_EXPIRES_MILLIS) {
+    throw new GalaxyFDSClientException(
+      `expiration ${millis} is too small; it must be in milliseconds (not seconds) since the epoch`,
+    );
+  }
+  return millis;
+}
 
 /**
  * Constructs the canonical string to sign.
