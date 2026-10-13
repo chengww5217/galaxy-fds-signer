@@ -140,6 +140,11 @@ export const Signer = {
   /**
    * Builds the value of the `Authorization` HTTP header:
    * `Galaxy-V2 {accessKeyId}:{base64signature}`.
+   *
+   * @throws GalaxyFDSClientException when neither a `date` nor an
+   *         `x-xiaomi-date` header is present (and the URI carries no
+   *         `Expires`): the server rejects such requests, so the signature
+   *         would be useless.
    */
   getAuthorizationHeader(
     httpMethod: HttpMethod,
@@ -149,13 +154,17 @@ export const Signer = {
     secretAccessKeyId: string,
     algorithm: SignAlgorithm = SignAlgorithm.HmacSHA1,
   ): string {
-    const signature = Signer.signToBase64(
-      httpMethod,
-      uri,
-      httpHeaders,
-      secretAccessKeyId,
-      algorithm,
-    );
+    const headers = HeaderMultiMap.from(httpHeaders);
+    if (
+      !headers.has(Common.DATE) &&
+      !headers.has(XiaomiHeader.DATE) &&
+      getExpires(parseUri(uri).query) <= 0
+    ) {
+      throw new GalaxyFDSClientException(
+        `a "${Common.DATE}" or "${XiaomiHeader.DATE}" header is required to sign a request`,
+      );
+    }
+    const signature = Signer.signToBase64(httpMethod, uri, headers, secretAccessKeyId, algorithm);
     return GALAXY_V2_PREFIX + accessKeyId + ':' + signature;
   },
 

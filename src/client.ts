@@ -1,6 +1,10 @@
 import { Common } from './common.js';
 import { FDSClientConfiguration, type FDSClientConfigurationOptions } from './config.js';
-import { type CredentialInput, type GalaxyFDSCredential, toGalaxyFDSCredential } from './credential.js';
+import {
+  type CredentialInput,
+  type GalaxyFDSCredential,
+  toGalaxyFDSCredential,
+} from './credential.js';
 import { HttpMethod, SignAlgorithm, SubResource } from './enums.js';
 import { HeaderMultiMap, type HttpHeaders, Signer } from './auth/signer.js';
 
@@ -65,11 +69,7 @@ export class GalaxyFDSClient {
    * @param uri         The full request URI.
    * @param httpHeaders Headers participating in the signature (optional).
    */
-  getAuthorizationHeader(
-    httpMethod: HttpMethod,
-    uri: string,
-    httpHeaders?: HttpHeaders,
-  ): string {
+  getAuthorizationHeader(httpMethod: HttpMethod, uri: string, httpHeaders?: HttpHeaders): string {
     return Signer.getAuthorizationHeader(
       httpMethod,
       uri,

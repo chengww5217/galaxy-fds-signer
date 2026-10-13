@@ -32,6 +32,23 @@ describe('Signer API', () => {
   });
 });
 
+describe('getAuthorizationHeader date requirement', () => {
+  it.each([[{}], [{ 'content-type': 'text/plain' }]])(
+    'rejects a request without date headers: %j',
+    (headers) => {
+      expect(() =>
+        Signer.getAuthorizationHeader(HttpMethod.GET, URI, headers, ACCESS_ID, ACCESS_SECRET),
+      ).toThrow(/date/);
+    },
+  );
+
+  it.each([[{ Date: 'd' }], [{ 'X-Xiaomi-Date': 'd' }]])('accepts %j', (headers) => {
+    expect(
+      Signer.getAuthorizationHeader(HttpMethod.GET, URI, headers, ACCESS_ID, ACCESS_SECRET),
+    ).toMatch(/^Galaxy-V2 /);
+  });
+});
+
 describe('generatePresignedUri input validation', () => {
   function presign(expiration: Date | number, bucketName = 'my-bucket'): string {
     return Signer.generatePresignedUri(

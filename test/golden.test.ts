@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest';
 import { HeaderMultiMap } from '../src/auth/signer.js';
 import {
   constructStringToSign,
+  GalaxyFDSClientException,
   HttpMethod,
   SignAlgorithm,
   Signer,
@@ -20,7 +21,8 @@ interface SignCase {
   expected: {
     stringToSign: string;
     signature: string;
-    authorizationHeader: string;
+    /** `undefined` when the authorization header must be refused. */
+    authorizationHeader: string | undefined;
   };
 }
 
@@ -51,7 +53,7 @@ const SIGN_CASES: SignCase[] = [
     expected: {
       stringToSign: 'GET\n\n\n\n/my-bucket/my-object',
       signature: 'PJHrH088tbkMjrkSR6uO6n/wBck=',
-      authorizationHeader: 'Galaxy-V2 AKIDEXAMPLEACCESSID:PJHrH088tbkMjrkSR6uO6n/wBck=',
+      authorizationHeader: undefined,
     },
   },
   {
@@ -93,8 +95,7 @@ const SIGN_CASES: SignCase[] = [
     ],
     algorithm: SignAlgorithm.HmacSHA1,
     expected: {
-      stringToSign:
-        'GET\n\n\n\nx-xiaomi-date:Sun, 06 Nov 1994 08:49:37 GMT\n/my-bucket/my-object',
+      stringToSign: 'GET\n\n\n\nx-xiaomi-date:Sun, 06 Nov 1994 08:49:37 GMT\n/my-bucket/my-object',
       signature: 'LU3tbLo2KLE+p8/GXncFqLf5dSI=',
       authorizationHeader: 'Galaxy-V2 AKIDEXAMPLEACCESSID:LU3tbLo2KLE+p8/GXncFqLf5dSI=',
     },
@@ -295,15 +296,21 @@ describe('signing — golden parity with galaxy-fds-sdk-java 3.0.48', () => {
       });
 
       it('produces the same authorization header', () => {
-        const actual = Signer.getAuthorizationHeader(
-          c.httpMethod,
-          c.uri,
-          headers,
-          ACCESS_ID,
-          ACCESS_SECRET,
-          c.algorithm,
-        );
-        expect(actual).toBe(c.expected.authorizationHeader);
+        const build = () =>
+          Signer.getAuthorizationHeader(
+            c.httpMethod,
+            c.uri,
+            headers,
+            ACCESS_ID,
+            ACCESS_SECRET,
+            c.algorithm,
+          );
+        if (c.expected.authorizationHeader === undefined) {
+          // No date and no Expires: the server would reject it, so we refuse.
+          expect(build).toThrow(GalaxyFDSClientException);
+        } else {
+          expect(build()).toBe(c.expected.authorizationHeader);
+        }
       });
     });
   }
