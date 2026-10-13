@@ -129,6 +129,20 @@ describe('signRequest', () => {
     expect(withXiaomi.headers['x-xiaomi-date']).toBe('x');
   });
 
+  it('signs and returns trimmed header values, so the request verifies after fetch', async () => {
+    const padded = await signer.signRequest({
+      bucket: 'b',
+      headers: { 'x-xiaomi-meta-a': '  v\t' },
+      date: DATE,
+    });
+    const clean = await signer.signRequest({
+      bucket: 'b',
+      headers: { 'x-xiaomi-meta-a': 'v' },
+      date: DATE,
+    });
+    expect(padded).toEqual(clean);
+  });
+
   it('is deterministic for the same input', async () => {
     const input = { method: 'DELETE', bucket: 'b', object: 'o', date: DATE } as const;
     expect(await signer.signRequest(input)).toEqual(await signer.signRequest(input));
@@ -190,6 +204,8 @@ describe('signRequest', () => {
     ['headers given as a string', { headers: 'content-type' }],
     ['a non-string header value', { headers: { 'content-length': 5 } }],
     ['malformed header pairs', { headers: [['a']] }],
+    ['an invalid header name', { headers: { 'bad name': 'v' } }],
+    ['a header value with a line break', { headers: { 'x-xiaomi-meta-a': 'a\r\nb' } }],
     ['a non-string object name', { bucket: 'b', object: 5 }],
     ['a non-scalar sub-resource value', { bucket: 'b', subResources: { uploadId: {} } }],
     ['a non-object query', { bucket: 'b', query: 'a=1' }],

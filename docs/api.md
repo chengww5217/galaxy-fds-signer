@@ -161,6 +161,8 @@ new Headers({ 'Content-Type': 'image/png' }) // WHATWG Headers
 
 Names are case-insensitive and returned in lower case. A name may appear only once. HTTP clients join repeated headers with `", "` while the signature joins them with `","`, so a repeated header could never verify.
 
+Values are trimmed of leading and trailing whitespace before signing and returned trimmed, since `fetch` strips it before sending. Anything `Headers` would reject throws `INVALID_HEADERS` up front: a name that is not an HTTP token, or a value containing NUL, CR, LF or a character above U+00FF.
+
 The signature covers:
 
 | Header | Signed |
@@ -233,7 +235,7 @@ class GalaxyFDSSignerError extends Error {
 | `CDN_NOT_CONFIGURED` | config | `cdn` | `cdn: true` with no CDN endpoint, e.g. `*.mi-fds.com` without `cdnEndpoint` |
 | `UNSUPPORTED_METHOD` | input | `method` | Unsupported `method` |
 | `INVALID_INPUT` | input | `input` | The input object is missing or not an object |
-| `INVALID_HEADERS` | input | `headers` | A repeated header name, a non-string name or value, or headers in an unsupported shape |
+| `INVALID_HEADERS` | input | `headers` | A repeated header name, a non-string or non-token name, a value with NUL / CR / LF / characters above U+00FF, or headers in an unsupported shape |
 | `MISSING_DATE` | input | `headers` | Neither `date` nor `x-xiaomi-date` (internal signing only; `signRequest` always adds one) |
 | `INVALID_BUCKET` | input | `bucket` | A missing `bucket` for `presign`, or for `object` / `subResources`; a bucket containing `/`; a bucket that is not a DNS label on a `*.mi-fds.com` endpoint |
 | `INVALID_OBJECT` | input | `object` | `object` is not a string |

@@ -175,6 +175,30 @@ describe('HeaderMultiMap', () => {
     expect(HeaderMultiMap.from(map)).toBe(map);
   });
 
+  it('trims leading/trailing HTTP whitespace from values, as fetch does', () => {
+    const map = HeaderMultiMap.from({ 'x-xiaomi-meta-a': ' \t v  w \r\n', 'content-md5': '   ' });
+    expect(map.getFirst('x-xiaomi-meta-a')).toBe('v  w');
+    expect(map.getFirst('content-md5')).toBe('');
+    // The signature then covers exactly what Headers will send.
+    expect(new Headers({ 'x-xiaomi-meta-a': ' \t v  w \r\n' }).get('x-xiaomi-meta-a')).toBe('v  w');
+  });
+
+  it.each(['bad name', 'a:b', 'é', '(x)', 'a\nb'])('rejects header name %j', (name) => {
+    expect(() => HeaderMultiMap.from({ [name]: 'v' })).toThrow(/invalid header name/);
+  });
+
+  it.each(['a\nb', 'a\rb', 'a\0b', '中文', '\ud800'])('rejects header value %j', (value) => {
+    expect(() => HeaderMultiMap.from({ 'x-xiaomi-meta-a': value })).toThrow(
+      /invalid value for header/,
+    );
+  });
+
+  it('accepts Latin-1 values that Headers accepts', () => {
+    expect(HeaderMultiMap.from({ 'x-xiaomi-meta-a': 'café' }).getFirst('x-xiaomi-meta-a')).toBe(
+      'café',
+    );
+  });
+
   it('from(undefined) yields an empty map and getFirst defaults to an empty string', () => {
     const map = HeaderMultiMap.from(undefined);
     expect(map.entries()).toEqual([]);

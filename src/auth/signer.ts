@@ -23,6 +23,13 @@ import { encodeUriPath, parseUri, parseUriParameters, urlEncode } from './utils.
 export type HttpHeaders =
   Record<string, string | string[]> | Iterable<readonly [string, string]> | Headers;
 
+/** An RFC 9110 `token`: the characters allowed in a header name. */
+const HTTP_TOKEN = /^[!#$%&'*+\-.^_`|~0-9A-Za-z]+$/;
+/** Leading/trailing HTTP whitespace, which `fetch` strips from header values. */
+const HTTP_WHITESPACE_EDGES = /^[\t\n\r ]+|[\t\n\r ]+$/g;
+/** What `Headers` refuses in a (trimmed) value: NUL, CR, LF and non-ByteString characters. */
+const INVALID_HEADER_VALUE = /[\0\r\n\u0100-\uffff]/;
+
 /**
  * Ordered, multi-valued header container. Names are normalized to lower case
  * so lookups are case-insensitive.
@@ -79,6 +86,13 @@ export class HeaderMultiMap implements Iterable<[string, string]> {
     return map;
   }
 
+  /**
+   * Adds a header. The name must be an HTTP token and the value is trimmed of
+   * leading/trailing HTTP whitespace, exactly as `fetch` / `Headers` do before
+   * sending: signing the untrimmed value would yield a signature the server
+   * cannot reproduce, and a name or value `Headers` rejects would only fail
+   * later, in the caller's `fetch`, as a plain `TypeError`.
+   */
   put(key: string, value: string): void {
     if (typeof key !== 'string' || key.length === 0 || typeof value !== 'string') {
       throw new GalaxyFDSSignerError(
@@ -87,7 +101,22 @@ export class HeaderMultiMap implements Iterable<[string, string]> {
         { field: 'headers' },
       );
     }
-    this.entriesList.push([key.toLowerCase(), value]);
+    if (!HTTP_TOKEN.test(key)) {
+      throw new GalaxyFDSSignerError(
+        'INVALID_HEADERS',
+        `invalid header name ${JSON.stringify(key)}: must be an HTTP token`,
+        { field: 'headers' },
+      );
+    }
+    const trimmed = value.replace(HTTP_WHITESPACE_EDGES, '');
+    if (INVALID_HEADER_VALUE.test(trimmed)) {
+      throw new GalaxyFDSSignerError(
+        'INVALID_HEADERS',
+        `invalid value for header "${key}": must not contain NUL, CR, LF or characters above U+00FF`,
+        { field: 'headers' },
+      );
+    }
+    this.entriesList.push([key.toLowerCase(), trimmed]);
   }
 
   /** All (lower-cased key, value) entries in insertion order. */
