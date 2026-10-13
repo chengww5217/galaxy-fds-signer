@@ -184,13 +184,13 @@ export const Signer = {
     httpMethod: HttpMethod,
     uri: string,
     httpHeaders: HttpHeaders | undefined,
-    secretAccessKeyId: string,
+    accessSecret: string,
     algorithm: SignAlgorithm = SignAlgorithm.HmacSHA1,
   ): Buffer {
     const headers = HeaderMultiMap.from(httpHeaders);
     const stringToSign = constructStringToSign(httpMethod, uri, headers);
     const digest = SIGN_ALGORITHM_DIGEST[toSignAlgorithm(algorithm)];
-    return createHmac(digest, secretAccessKeyId).update(stringToSign, 'utf-8').digest();
+    return createHmac(digest, accessSecret).update(stringToSign, 'utf-8').digest();
   },
 
   /** Signs the request and returns the Base64-encoded signature. */
@@ -198,12 +198,10 @@ export const Signer = {
     httpMethod: HttpMethod,
     uri: string,
     httpHeaders: HttpHeaders | undefined,
-    secretAccessKeyId: string,
+    accessSecret: string,
     algorithm: SignAlgorithm = SignAlgorithm.HmacSHA1,
   ): string {
-    return Signer.sign(httpMethod, uri, httpHeaders, secretAccessKeyId, algorithm).toString(
-      'base64',
-    );
+    return Signer.sign(httpMethod, uri, httpHeaders, accessSecret, algorithm).toString('base64');
   },
 
   /**
@@ -220,7 +218,7 @@ export const Signer = {
     uri: string,
     httpHeaders: HttpHeaders | undefined,
     accessKeyId: string,
-    secretAccessKeyId: string,
+    accessSecret: string,
     algorithm: SignAlgorithm = SignAlgorithm.HmacSHA1,
   ): string {
     const headers = HeaderMultiMap.from(httpHeaders);
@@ -233,7 +231,7 @@ export const Signer = {
         `a "${Common.DATE}" or "${XiaomiHeader.DATE}" header is required to sign a request`,
       );
     }
-    const signature = Signer.signToBase64(httpMethod, uri, headers, secretAccessKeyId, algorithm);
+    const signature = Signer.signToBase64(httpMethod, uri, headers, accessSecret, algorithm);
     return GALAXY_V2_PREFIX + accessKeyId + ':' + signature;
   },
 
