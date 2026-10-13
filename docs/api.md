@@ -4,7 +4,7 @@
 import {
   createSigner, signRequest, presign,               // functions
   HttpMethod, SignAlgorithm, SubResource, XiaomiHeader, // constants
-  GalaxyFDSSignerError,                             // error
+  GalaxyFDSSignerError, ErrorCode,                  // errors
 } from 'galaxy-fds-signer';
 ```
 
@@ -204,21 +204,51 @@ Each constant is a plain object with a matching literal union type. You can also
 
 ## Errors
 
-Every failure is a `GalaxyFDSSignerError`, a subclass of `Error`. `createSigner` throws it; `signRequest` and `presign` reject with it. If the error wraps an underlying error (for example an invalid URL), that error is in `cause`. Messages never include the secret.
+Every failure is a `GalaxyFDSSignerError`, a subclass of `Error`. `createSigner` throws it; `signRequest` and `presign` reject with it.
 
-| Cause | Thrown by |
-| --- | --- |
-| Missing or empty `accessId` / `accessSecret`, unknown `algorithm` | `createSigner` |
-| `endpoint` with an unrecognized suffix, or a `baseUri` / `cdnBaseUri` that is not an absolute http(s) URL | `createSigner` |
-| Unsupported `method` | both |
-| A bucket containing `/`, or `object` / `subResources` without a bucket | both |
-| A bucket that is not a DNS label when using a `*.mi-fds.com` endpoint | both |
-| `cdn: true` with no CDN endpoint, e.g. `*.mi-fds.com` without `cdnEndpoint` | both |
-| A sub-resource name not in the list above, or a value that is not a string, number or boolean | both |
-| A repeated header name, or headers in an unsupported shape | both |
-| An invalid `date`, or an invalid `url` | `signRequest` |
-| Missing `bucket` | `presign` |
-| An expiration that is not an integer, is in seconds instead of milliseconds, or is in the past; `expiresIn <= 0` | `presign` |
+```ts
+class GalaxyFDSSignerError extends Error {
+  readonly code: GalaxyFDSSignerErrorCode; // e.g. 'INVALID_BUCKET'
+  readonly kind: 'config' | 'input' | 'runtime';
+  readonly field?: string;                 // e.g. 'bucket', 'expiresIn'
+  toJSON(): { name, code, kind, field?, message };
+}
+```
+
+- `code` and `kind` are stable; `message` is for humans and may change. `ErrorCode` lists every code (`ErrorCode.INVALID_BUCKET === 'INVALID_BUCKET'`).
+- `field` names the option or input field at fault, when there is one.
+- `cause` holds the underlying error, if any (for example from `new URL`). `toJSON()` leaves out `cause` and the stack, so `JSON.stringify(err)` is safe to send. Messages never include the secret.
+- `kind` tells you who is at fault: `config` errors come from your signer configuration and may mention internal hosts, `input` errors from the request being signed, `runtime` errors from the environment. Mapping errors to HTTP statuses is up to you.
+
+| `code` | `kind` | `field` | Cause |
+| --- | --- | --- | --- |
+| `INVALID_OPTIONS` | config | `options` | `options` is not an object |
+| `INVALID_CREDENTIALS` | config | `accessId`, `accessSecret` | Missing, empty or non-string credentials |
+| `UNSUPPORTED_ALGORITHM` | config | `algorithm` | Unknown `algorithm` |
+| `INVALID_ENDPOINT` | config | `endpoint`, `baseUri`, `cdnBaseUri` | An empty `endpoint` or one with an unrecognized suffix, or a `baseUri` / `cdnBaseUri` that is not an absolute http(s) URL |
+| `CDN_NOT_CONFIGURED` | config | `cdn` | `cdn: true` with no CDN endpoint, e.g. `*.mi-fds.com` without `cdnEndpoint` |
+| `UNSUPPORTED_METHOD` | input | `method` | Unsupported `method` |
+| `INVALID_HEADERS` | input | `headers` | A repeated header name, a non-string name or value, or headers in an unsupported shape |
+| `MISSING_DATE` | input | `headers` | Neither `date` nor `x-xiaomi-date` (internal signing only; `signRequest` always adds one) |
+| `INVALID_BUCKET` | input | `bucket` | A missing `bucket` for `presign`, or for `object` / `subResources`; a bucket containing `/`; a bucket that is not a DNS label on a `*.mi-fds.com` endpoint |
+| `INVALID_OBJECT` | input | `object` | `object` is not a string |
+| `INVALID_SUB_RESOURCE` | input | `subResources` | A sub-resource name not in the list above, or a value that is not a string, number or boolean |
+| `INVALID_URL` | input | `url` | An empty, relative or malformed `url`, or `url` combined with `bucket` / `object` / `subResources` / `cdn` / `query` |
+| `INVALID_DATE` | input | `date` | `date` is not a valid `Date` |
+| `INVALID_EXPIRATION` | input | `expires`, `expiresIn` | An expiration that is not an integer, is in seconds instead of milliseconds, or is in the past; `expiresIn <= 0` |
+| `CRYPTO_UNAVAILABLE` | runtime | | `globalThis.crypto.subtle` is missing |
+| `SIGNING_FAILED` | runtime | | Any unexpected failure while signing; see `cause` |
+
+```ts
+try {
+  return Response.json(await signer.presign({ bucket, object, expiresIn }));
+} catch (e) {
+  if (e instanceof GalaxyFDSSignerError && e.kind === 'input') {
+    return Response.json(e, { status: 400 }); // { name, code, kind, field, message }
+  }
+  throw e; // config / runtime: log it, answer with a generic 500
+}
+```
 
 ## How signing works
 

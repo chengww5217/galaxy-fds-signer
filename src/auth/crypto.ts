@@ -34,6 +34,7 @@ function subtle(): SubtleCrypto {
   const s = (globalThis as { crypto?: Crypto }).crypto?.subtle;
   if (s === undefined) {
     throw new GalaxyFDSSignerError(
+      'CRYPTO_UNAVAILABLE',
       'Web Crypto (globalThis.crypto.subtle) is not available in this runtime',
     );
   }

@@ -49,13 +49,19 @@ export class HeaderMultiMap implements Iterable<[string, string]> {
     }
     if (typeof headers !== 'object') {
       throw new GalaxyFDSSignerError(
+        'INVALID_HEADERS',
         'headers must be an object, a Headers instance or a list of [name, value] pairs',
+        { field: 'headers' },
       );
     }
     if (isIterable(headers)) {
       for (const entry of headers) {
         if (!Array.isArray(entry) || entry.length !== 2) {
-          throw new GalaxyFDSSignerError('header entries must be [name, value] pairs');
+          throw new GalaxyFDSSignerError(
+            'INVALID_HEADERS',
+            'header entries must be [name, value] pairs',
+            { field: 'headers' },
+          );
         }
         map.put(entry[0], entry[1]);
       }
@@ -76,7 +82,9 @@ export class HeaderMultiMap implements Iterable<[string, string]> {
   put(key: string, value: string): void {
     if (typeof key !== 'string' || key.length === 0 || typeof value !== 'string') {
       throw new GalaxyFDSSignerError(
+        'INVALID_HEADERS',
         `invalid header ${JSON.stringify(key)}: names and values must be strings`,
+        { field: 'headers' },
       );
     }
     this.entriesList.push([key.toLowerCase(), value]);
@@ -139,7 +147,9 @@ export function formatSubResources(subResources: SubResources | undefined): stri
   for (const [name, value] of entries) {
     if (!SUB_RESOURCE_SET.has(name)) {
       throw new GalaxyFDSSignerError(
+        'INVALID_SUB_RESOURCE',
         `unsupported sub-resource: ${JSON.stringify(name)} (expected one of ${[...SUB_RESOURCE_SET].join(', ')})`,
+        { field: 'subResources' },
       );
     }
     if (value === undefined || value === false) {
@@ -150,7 +160,11 @@ export function formatSubResources(subResources: SubResources | undefined): stri
     } else if (typeof value === 'string' || typeof value === 'number') {
       parts.push(`${name}=${urlEncode(String(value))}`);
     } else {
-      throw new GalaxyFDSSignerError(`invalid value for sub-resource ${name}: ${String(value)}`);
+      throw new GalaxyFDSSignerError(
+        'INVALID_SUB_RESOURCE',
+        `invalid value for sub-resource ${name}: ${String(value)}`,
+        { field: 'subResources' },
+      );
     }
   }
   return parts;
@@ -198,8 +212,8 @@ export const Signer = {
     accessSecret: string,
     algorithm: SignAlgorithm = SignAlgorithm.HmacSHA1,
   ): Promise<Uint8Array> {
-    return wrapErrorsAsync('failed to sign request', () => {
-      requireString(accessSecret, 'accessSecret');
+    return wrapErrorsAsync('SIGNING_FAILED', 'failed to sign request', () => {
+      requireString(accessSecret, 'accessSecret', 'INVALID_CREDENTIALS');
       const alg = toSignAlgorithm(algorithm);
       const stringToSign = constructStringToSign(httpMethod, uri, httpHeaders);
       return hmac(alg, accessSecret, stringToSign);
@@ -234,15 +248,22 @@ export const Signer = {
     accessSecret: string,
     algorithm: SignAlgorithm = SignAlgorithm.HmacSHA1,
   ): Promise<string> {
-    requireString(accessKeyId, 'accessId');
-    const headers = wrapErrors('invalid headers', () => HeaderMultiMap.from(httpHeaders));
+    requireString(accessKeyId, 'accessId', 'INVALID_CREDENTIALS');
+    const headers = wrapErrors(
+      'INVALID_HEADERS',
+      'invalid headers',
+      () => HeaderMultiMap.from(httpHeaders),
+      'headers',
+    );
     if (
       !headers.has(Common.DATE) &&
       !headers.has(XiaomiHeader.DATE) &&
       getExpires(parseUri(uri).query) <= 0
     ) {
       throw new GalaxyFDSSignerError(
+        'MISSING_DATE',
         `a "${Common.DATE}" or "${XiaomiHeader.DATE}" header is required to sign a request`,
+        { field: 'headers' },
       );
     }
     const signature = await Signer.signToBase64(httpMethod, uri, headers, accessSecret, algorithm);
@@ -266,31 +287,40 @@ export const Signer = {
     algorithm = SignAlgorithm.HmacSHA1,
     headers: httpHeaders,
   }: PresignUriInput): Promise<string> {
-    requireString(bucketName, 'bucketName');
+    requireString(bucketName, 'bucketName', 'INVALID_BUCKET');
     if (bucketName.includes('/')) {
       // A slash would silently shift the object into a different bucket path.
-      throw new GalaxyFDSSignerError(`bucketName must not contain "/": ${bucketName}`);
+      throw new GalaxyFDSSignerError(
+        'INVALID_BUCKET',
+        `bucketName must not contain "/": ${bucketName}`,
+        { field: 'bucketName' },
+      );
     }
-    requireString(accessId, 'accessId');
+    requireString(accessId, 'accessId', 'INVALID_CREDENTIALS');
     const expiresMillis = toExpiresMillis(expiration);
     const subResourceParts = formatSubResources(subResources);
 
-    const encodedUri = wrapErrors('failed to generate pre-signed URI', () => {
-      const base = new URL(baseUri);
-      const objectPart = objectName.length > 0 ? '/' + objectName : '';
+    const encodedUri = wrapErrors(
+      'INVALID_ENDPOINT',
+      'failed to generate pre-signed URI',
+      () => {
+        const base = new URL(baseUri);
+        const objectPart = objectName.length > 0 ? '/' + objectName : '';
 
-      // Encode the path as java.net.URI's constructor would. Signing re-parses
-      // this URI and decodes the path back, so the signature is unaffected.
-      const path = encodeUriPath('/' + bucketName + objectPart);
-      const queryParts: string[] = [];
-      queryParts.push(...subResourceParts);
-      queryParts.push(`${Common.GALAXY_ACCESS_KEY_ID}=${accessId}`);
-      queryParts.push(`${Common.EXPIRES}=${expiresMillis}`);
-      const query = queryParts.join('&');
+        // Encode the path as java.net.URI's constructor would. Signing re-parses
+        // this URI and decodes the path back, so the signature is unaffected.
+        const path = encodeUriPath('/' + bucketName + objectPart);
+        const queryParts: string[] = [];
+        queryParts.push(...subResourceParts);
+        queryParts.push(`${Common.GALAXY_ACCESS_KEY_ID}=${accessId}`);
+        queryParts.push(`${Common.EXPIRES}=${expiresMillis}`);
+        const query = queryParts.join('&');
 
-      const port = base.port === '' ? '' : `:${base.port}`;
-      return `${base.protocol}//${base.hostname}${port}${path}?${query}`;
-    });
+        const port = base.port === '' ? '' : `:${base.port}`;
+        return `${base.protocol}//${base.hostname}${port}${path}?${query}`;
+      },
+      'baseUri',
+    );
 
     const signature = await Signer.signToBase64(
       method,
@@ -316,16 +346,20 @@ const MIN_EXPIRES_MILLIS = 1e12;
  * `parseInt`, so a fractional, zero or negative value would yield a URI whose
  * signature does not match (or that is signed with the date line instead).
  */
-export function toExpiresMillis(expiration: Date | number): number {
+export function toExpiresMillis(expiration: Date | number, field = 'expiration'): number {
   const millis = expiration instanceof Date ? expiration.getTime() : expiration;
   if (typeof millis !== 'number' || !Number.isSafeInteger(millis)) {
     throw new GalaxyFDSSignerError(
+      'INVALID_EXPIRATION',
       'expiration must be a valid Date or an integer epoch time in milliseconds',
+      { field },
     );
   }
   if (millis < MIN_EXPIRES_MILLIS) {
     throw new GalaxyFDSSignerError(
+      'INVALID_EXPIRATION',
       `expiration ${millis} is too small; it must be in milliseconds (not seconds) since the epoch`,
+      { field },
     );
   }
   return millis;

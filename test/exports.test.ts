@@ -6,6 +6,7 @@ describe('public exports', () => {
   it('exposes only the supported runtime API', () => {
     expect(Object.keys(api).sort()).toEqual(
       [
+        'ErrorCode',
         'GalaxyFDSSignerError',
         'HttpMethod',
         'SignAlgorithm',

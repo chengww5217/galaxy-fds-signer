@@ -86,7 +86,9 @@ export function toHttpMethod(method: unknown): HttpMethod {
   const upper = typeof method === 'string' ? method.toUpperCase() : undefined;
   if (upper === undefined || !HTTP_METHOD_SET.has(upper)) {
     throw new GalaxyFDSSignerError(
+      'UNSUPPORTED_METHOD',
       `unsupported HTTP method: ${String(method)} (expected one of ${[...HTTP_METHOD_SET].join(', ')})`,
+      { field: 'method' },
     );
   }
   return upper as HttpMethod;
@@ -100,7 +102,9 @@ export function toHttpMethod(method: unknown): HttpMethod {
 export function toSignAlgorithm(algorithm: unknown): SignAlgorithm {
   if (typeof algorithm !== 'string' || !SIGN_ALGORITHM_SET.has(algorithm)) {
     throw new GalaxyFDSSignerError(
+      'UNSUPPORTED_ALGORITHM',
       `unsupported sign algorithm: ${String(algorithm)} (expected one of ${[...SIGN_ALGORITHM_SET].join(', ')})`,
+      { field: 'algorithm' },
     );
   }
   return algorithm as SignAlgorithm;

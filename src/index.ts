@@ -31,4 +31,10 @@ export {
 export type { FDSEndpointOptions } from './config.js';
 export type { SubResources } from './auth/signer.js';
 export { HttpMethod, SignAlgorithm, SubResource, XiaomiHeader } from './enums.js';
-export { GalaxyFDSSignerError } from './errors.js';
+export {
+  ErrorCode,
+  GalaxyFDSSignerError,
+  type GalaxyFDSSignerErrorCode,
+  type GalaxyFDSSignerErrorJSON,
+  type GalaxyFDSSignerErrorKind,
+} from './errors.js';

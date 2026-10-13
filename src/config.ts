@@ -74,8 +74,10 @@ export class FDSEndpointConfiguration {
     let regionName = options.regionName;
 
     if (endpoint !== undefined) {
-      if (endpoint.length === 0) {
-        throw new GalaxyFDSSignerError('endpoint must be a non-empty string');
+      if (typeof endpoint !== 'string' || endpoint.length === 0) {
+        throw new GalaxyFDSSignerError('INVALID_ENDPOINT', 'endpoint must be a non-empty string', {
+          field: 'endpoint',
+        });
       }
       const host = endpoint.split(':')[0];
       if (host.endsWith(URI_NET_SUFFIX)) {
@@ -85,7 +87,9 @@ export class FDSEndpointConfiguration {
       } else if (host.endsWith(URI_HOST_STYLE_COM_SUFFIX)) {
         uriSuffix = URI_HOST_STYLE_COM_SUFFIX;
       } else {
-        throw new GalaxyFDSSignerError('illegal endpoint: ' + endpoint);
+        throw new GalaxyFDSSignerError('INVALID_ENDPOINT', 'illegal endpoint: ' + endpoint, {
+          field: 'endpoint',
+        });
       }
       regionName = host.substring(0, host.length - uriSuffix.length);
     }
@@ -142,7 +146,9 @@ export class FDSEndpointConfiguration {
     const host = enableCdn ? this.cdnEndpoint : this.endpoint;
     if (host === undefined || host.length === 0) {
       throw new GalaxyFDSSignerError(
+        'CDN_NOT_CONFIGURED',
         'Please use cdnEndpoint (or cdnBaseUri) to set the CDN domain first if you want to use the CDN.',
+        { field: 'cdn' },
       );
     }
     return (this.enableHttps ? URI_HTTPS_PREFIX : URI_HTTP_PREFIX) + host + '/';
@@ -154,7 +160,11 @@ function validateBaseUri(uri: string | undefined, name: string): string | undefi
     uri !== undefined &&
     (typeof uri !== 'string' || !/^https?:$/.test(tryParseUrl(uri)?.protocol ?? ''))
   ) {
-    throw new GalaxyFDSSignerError(`${name} must be an absolute http(s) URI: ${String(uri)}`);
+    throw new GalaxyFDSSignerError(
+      'INVALID_ENDPOINT',
+      `${name} must be an absolute http(s) URI: ${String(uri)}`,
+      { field: name },
+    );
   }
   return uri;
 }

@@ -45,7 +45,7 @@ export function parseUri(uri: string): UriParts {
   const raw = typeof uri === 'string' ? RAW_URI.exec(uri) : null;
   const url = raw === null ? null : tryParseUrl(uri);
   if (raw === null || url === null) {
-    throw new GalaxyFDSSignerError(`invalid URI: ${String(uri)}`);
+    throw new GalaxyFDSSignerError('INVALID_URL', `invalid URI: ${String(uri)}`, { field: 'url' });
   }
   return {
     scheme: url.protocol.replace(/:$/, ''),

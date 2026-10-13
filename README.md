@@ -31,6 +31,8 @@ const req = await signer.signRequest({ method: 'PUT', bucket: 'my-bucket', objec
 await fetch(req.url, { ...req, body: file });
 ```
 
+Every failure is a `GalaxyFDSSignerError` with a stable `code` (e.g. `INVALID_BUCKET`), a `kind` (`config`, `input` or `runtime`) and the offending `field`. Catch it in your handler: `input` errors are caused by the request and can be returned to the client as JSON (`Response.json(err)` sends `{ name, code, kind, field, message }`), while `config` and `runtime` errors belong in your logs. See [Errors](./docs/api.md#errors).
+
 ## Documentation
 
 - [API reference](./docs/api.md): `createSigner`, `signRequest`, `presign`, every option, return value and error, and how signing works

@@ -138,10 +138,12 @@ const DNS_LABEL = /^[A-Za-z0-9](?:[A-Za-z0-9-]{0,61}[A-Za-z0-9])?$/;
  */
 export function createSigner(options: SignerOptions): FdsSigner {
   if (options === null || typeof options !== 'object') {
-    throw new GalaxyFDSSignerError('options must be an object');
+    throw new GalaxyFDSSignerError('INVALID_OPTIONS', 'options must be an object', {
+      field: 'options',
+    });
   }
-  const accessId = requireString(options.accessId, 'accessId');
-  const accessSecret = requireString(options.accessSecret, 'accessSecret');
+  const accessId = requireString(options.accessId, 'accessId', 'INVALID_CREDENTIALS');
+  const accessSecret = requireString(options.accessSecret, 'accessSecret', 'INVALID_CREDENTIALS');
   const algorithm = toSignAlgorithm(options.algorithm ?? SignAlgorithm.HmacSHA1);
   const config = new FDSEndpointConfiguration(options);
 
@@ -149,16 +151,24 @@ export function createSigner(options: SignerOptions): FdsSigner {
     const { bucket, object = '', cdn = false } = target;
     if (bucket === undefined) {
       if (requireBucket) {
-        throw new GalaxyFDSSignerError('bucket must be a non-empty string');
+        throw new GalaxyFDSSignerError('INVALID_BUCKET', 'bucket must be a non-empty string', {
+          field: 'bucket',
+        });
       }
       if (object !== '' || target.subResources !== undefined) {
-        throw new GalaxyFDSSignerError('object and subResources require a bucket');
+        throw new GalaxyFDSSignerError(
+          'INVALID_BUCKET',
+          'object and subResources require a bucket',
+          { field: 'bucket' },
+        );
       }
     } else {
       validateBucket(bucket);
     }
     if (typeof object !== 'string') {
-      throw new GalaxyFDSSignerError('object must be a string');
+      throw new GalaxyFDSSignerError('INVALID_OBJECT', 'object must be a string', {
+        field: 'object',
+      });
     }
     const query = [...formatSubResources(target.subResources), ...extraQuery];
     const base = cdn ? config.getCdnBaseUri() : config.getBaseUri();
@@ -178,9 +188,13 @@ export function createSigner(options: SignerOptions): FdsSigner {
         (k) => (input as unknown as Record<string, unknown>)[k] !== undefined,
       );
       if (mixed.length > 0) {
-        throw new GalaxyFDSSignerError(`url cannot be combined with ${mixed.join(', ')}`);
+        throw new GalaxyFDSSignerError(
+          'INVALID_URL',
+          `url cannot be combined with ${mixed.join(', ')}`,
+          { field: 'url' },
+        );
       }
-      url = requireString(input.url, 'url');
+      url = requireString(input.url, 'url', 'INVALID_URL');
     } else {
       url = resolveUrl(input, extraQuery, false);
     }
@@ -190,7 +204,9 @@ export function createSigner(options: SignerOptions): FdsSigner {
       // Galaxy-V2 equivalent and works everywhere.
       const date = input.date ?? new Date();
       if (!(date instanceof Date) || Number.isNaN(date.getTime())) {
-        throw new GalaxyFDSSignerError('date must be a valid Date');
+        throw new GalaxyFDSSignerError('INVALID_DATE', 'date must be a valid Date', {
+          field: 'date',
+        });
       }
       headers[XiaomiHeader.DATE] = date.toUTCString();
     }
@@ -260,24 +276,34 @@ function resolveExpiration(
 ): number {
   let millis: number;
   if (expires !== undefined) {
-    millis = toExpiresMillis(expires);
+    millis = toExpiresMillis(expires, 'expires');
   } else {
     const seconds = expiresIn ?? DEFAULT_EXPIRES_IN_SECONDS;
     if (typeof seconds !== 'number' || !Number.isFinite(seconds) || seconds <= 0) {
-      throw new GalaxyFDSSignerError('expiresIn must be a positive number of seconds');
+      throw new GalaxyFDSSignerError(
+        'INVALID_EXPIRATION',
+        'expiresIn must be a positive number of seconds',
+        { field: 'expiresIn' },
+      );
     }
     millis = Date.now() + Math.round(seconds * 1000);
   }
   if (millis <= Date.now()) {
-    throw new GalaxyFDSSignerError('expiration must be in the future');
+    throw new GalaxyFDSSignerError('INVALID_EXPIRATION', 'expiration must be in the future', {
+      field: expires !== undefined ? 'expires' : 'expiresIn',
+    });
   }
   return millis;
 }
 
 function validateBucket(bucket: unknown): asserts bucket is string {
-  requireString(bucket, 'bucket');
+  requireString(bucket, 'bucket', 'INVALID_BUCKET');
   if ((bucket as string).includes('/')) {
-    throw new GalaxyFDSSignerError(`bucket must not contain "/": ${bucket as string}`);
+    throw new GalaxyFDSSignerError(
+      'INVALID_BUCKET',
+      `bucket must not contain "/": ${bucket as string}`,
+      { field: 'bucket' },
+    );
   }
 }
 
@@ -287,11 +313,22 @@ function validateBucket(bucket: unknown): asserts bucket is string {
  * HTTP clients join them with ", ", so the request could not verify.
  */
 function toHeaderRecord(input: RequestHeaders | undefined): Record<string, string> {
-  const map = wrapErrors('invalid headers', () => HeaderMultiMap.from(input as HttpHeaders));
+  const map = wrapErrors(
+    'INVALID_HEADERS',
+    'invalid headers',
+    () => HeaderMultiMap.from(input as HttpHeaders),
+    'headers',
+  );
   const out: Record<string, string> = {};
   for (const [name, value] of map) {
     if (Object.hasOwn(out, name)) {
-      throw new GalaxyFDSSignerError(`header "${name}" is given more than once`);
+      throw new GalaxyFDSSignerError(
+        'INVALID_HEADERS',
+        `header "${name}" is given more than once`,
+        {
+          field: 'headers',
+        },
+      );
     }
     out[name] = value;
   }
@@ -305,7 +342,7 @@ function buildUrl(
   object: string,
   query: string[],
 ): string {
-  return wrapErrors('invalid endpoint', () => {
+  return wrapErrors('INVALID_ENDPOINT', 'invalid endpoint', () => {
     const base = new URL(baseUri);
     let path = '/';
     if (bucket !== undefined) {
@@ -340,8 +377,10 @@ function applyVirtualAddressing(
     // The bucket becomes a subdomain: anything but a single DNS label
     // (e.g. "a.b", "x@evil.com") would change the target host.
     throw new GalaxyFDSSignerError(
+      'INVALID_BUCKET',
       `bucket ${JSON.stringify(bucket)} cannot be used with virtual-hosted addressing: ` +
         'it must be a DNS label (letters, digits and inner hyphens, at most 63 characters)',
+      { field: 'bucket' },
     );
   }
   return `${url.protocol}//${bucket}.${url.host}/`;

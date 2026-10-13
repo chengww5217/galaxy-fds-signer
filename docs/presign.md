@@ -29,10 +29,11 @@ When `fetch` runs in a browser on another origin, the bucket must allow that ori
 ## Edge function example (Cloudflare Workers / Vercel Edge)
 
 ```ts
-import { createSigner } from 'galaxy-fds-signer';
+import { createSigner, GalaxyFDSSignerError } from 'galaxy-fds-signer';
 
 export default {
   async fetch(request: Request, env: Env) {
+    // A configuration error throws here and surfaces as a 500.
     const signer = createSigner({
       accessId: env.FDS_ACCESS_ID,
       accessSecret: env.FDS_ACCESS_SECRET,
@@ -40,12 +41,21 @@ export default {
     });
     const { name } = await request.json<{ name: string }>();
     // Authorize the caller and validate `name` here.
-    return Response.json(await signer.presign({ method: 'PUT', bucket: 'uploads', object: name }));
+    try {
+      return Response.json(await signer.presign({ method: 'PUT', bucket: 'uploads', object: name }));
+    } catch (e) {
+      // Input errors come from the caller's request: return the code so the
+      // client can tell them apart. Pick whatever status your API uses.
+      if (e instanceof GalaxyFDSSignerError && e.kind === 'input') {
+        return Response.json(e, { status: 400 }); // { name, code, kind, field, message }
+      }
+      throw e; // config / runtime: let the platform log it and answer 500
+    }
   },
 };
 ```
 
-The response is plain JSON, so the browser can pass it straight to `fetch`. This endpoint has no authentication of its own. Anyone who can call it can upload, so check who the caller is before signing.
+The response is plain JSON, so the browser can pass it straight to `fetch`. This endpoint has no authentication of its own. Anyone who can call it can upload, so check who the caller is before signing. See [Errors](./api.md#errors) for every error code.
 
 ## What the signature covers
 
@@ -111,7 +121,8 @@ A signature only proves who signed the request. FDS still checks that the access
 The browser can upload parts directly to FDS. The server only signs. Reading `res.json()` in the browser also requires CORS:
 
 ```ts
-// Server: start the upload with a signed request, then pre-sign one URL per part
+// Server: start the upload with a signed request, then pre-sign one URL per part.
+// `uploadId` and `partNumber` come from outside: handle errors as in the edge example.
 const init = await signer.signRequest({
   method: 'PUT', bucket, object, subResources: ['uploads'],
   headers: { 'content-type': 'application/json; charset=UTF-8' },
