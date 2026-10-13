@@ -323,6 +323,11 @@ function resolveExpiration(
       );
     }
     millis = Date.now() + Math.round(seconds * 1000);
+    if (!Number.isSafeInteger(millis)) {
+      throw new GalaxyFDSSignerError('INVALID_EXPIRATION', `expiresIn ${seconds} is too large`, {
+        field: 'expiresIn',
+      });
+    }
   }
   if (millis <= Date.now()) {
     throw new GalaxyFDSSignerError('INVALID_EXPIRATION', 'expiration must be in the future', {

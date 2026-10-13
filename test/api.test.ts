@@ -281,6 +281,7 @@ describe('presign', () => {
     ['an expiration in seconds', { bucket: 'b', expires: Math.floor(FUTURE / 1000) }],
     ['a non-positive expiresIn', { bucket: 'b', expiresIn: 0 }],
     ['a NaN expiresIn', { bucket: 'b', expiresIn: NaN }],
+    ['an Infinity expiresIn', { bucket: 'b', expiresIn: Infinity }],
     ['no input', undefined],
   ])('rejects %s', async (_name, input) => {
     await expect(signer.presign(input as never)).rejects.toThrow(GalaxyFDSSignerError);

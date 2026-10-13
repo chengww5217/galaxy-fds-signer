@@ -345,6 +345,13 @@ describe('error codes', () => {
     [
       'INVALID_EXPIRATION',
       'input',
+      'expiresIn',
+      'expiresIn overflowing a safe integer',
+      () => signer.presign({ bucket: 'b', expiresIn: 1e300 }),
+    ],
+    [
+      'INVALID_EXPIRATION',
+      'input',
       'expires',
       'expires in seconds',
       () => signer.presign({ bucket: 'b', expires: Math.floor(future() / 1000) }),

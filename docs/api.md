@@ -243,7 +243,7 @@ class GalaxyFDSSignerError extends Error {
 | `INVALID_QUERY` | input | `query` | `query` is not an object, a value is not a string or number, or a name is reserved (a sub-resource, `Expires`, `GalaxyAccessKeyId` or `Signature`, in any case) |
 | `INVALID_URL` | input | `url` | An empty, relative or malformed `url`, or `url` combined with `bucket` / `object` / `subResources` / `cdn` / `query` |
 | `INVALID_DATE` | input | `date` | `date` is not a valid `Date` |
-| `INVALID_EXPIRATION` | input | `expires`, `expiresIn` | An expiration that is not an integer, is in seconds instead of milliseconds, or is in the past; `expiresIn <= 0` |
+| `INVALID_EXPIRATION` | input | `expires`, `expiresIn` | An expiration that is not an integer, is in seconds instead of milliseconds, or is in the past; an `expiresIn` that is not positive, or so large the expiration overflows |
 | `CRYPTO_UNAVAILABLE` | runtime | | `globalThis.crypto.subtle` is missing |
 | `SIGNING_FAILED` | runtime | | Any unexpected failure while signing; see `cause` |
 
