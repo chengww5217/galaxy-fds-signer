@@ -18,6 +18,15 @@ updates:
     # broken version has time to be caught and pulled.
     cooldown:
       default-days: 7
+    # `@types/node` majors track Node.js majors, and the declarations stay on
+    # the oldest Node.js the package supports (`engines.node: >=22`): typing
+    # against a newer API surface would let an API missing from Node 22
+    # compile here and only fail at runtime for the users the package
+    # advertises. Move the types with the `engines` floor, not with the latest
+    # release; minor and patch updates on 22.x still arrive.
+    ignore:
+      - dependency-name: '@types/node'
+        update-types: ['version-update:semver-major']
     groups:
       dev-dependencies:
         dependency-type: development
