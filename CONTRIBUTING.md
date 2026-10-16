@@ -32,8 +32,11 @@ CI.
   them deliberately with `npm run test:integration` and `FDS_*` credentials;
   `test/integration/README.md` has the exact variables and the safety notes.
 - Keep the package dependency-free at runtime, and use Web-standard APIs only
-  in `src/` (no `node:*`, `Buffer` or `process`): `tsconfig.web.json` and
-  `test/runtimes.test.ts` enforce it.
+  in `src/` (no `node:*` imports, `Buffer`, or the `process` global):
+  `tsconfig.web.json` and `test/runtimes.test.ts` enforce it. The single
+  deliberate exception is the optional `node:crypto` fast path in
+  `src/auth/crypto.ts`: it reaches `process.getBuiltinModule` through
+  `globalThis` and falls back to Web Crypto wherever that is unavailable.
 - Use `undefined`, not `null`, for absent values in the library's own types: mark
   optional properties and parameters with `?`, and normalize any `null` at the
   boundary immediately.

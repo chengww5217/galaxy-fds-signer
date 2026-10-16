@@ -167,8 +167,9 @@ const RESERVED_QUERY_NAMES: ReadonlySet<string> = new Set(
  * });
  * ```
  *
- * Runs on any runtime with Web Crypto: Node.js >= 22, Cloudflare Workers,
- * Vercel Edge, Deno, Bun. Configuration errors throw synchronously.
+ * Runs on Node.js >= 22 and Bun — where the native `node:crypto` HMAC is
+ * used when available — and on any other runtime with Web Crypto: Cloudflare
+ * Workers, Vercel Edge, Deno. Configuration errors throw synchronously.
  */
 export function createSigner(options: SignerOptions): FdsSigner {
   if (options === null || typeof options !== 'object') {

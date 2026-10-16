@@ -214,7 +214,7 @@ export function formatSubResources(subResources: SubResources | undefined): stri
 
 /**
  * The secret to sign with: the access secret itself, or a keyed {@link Hmac}
- * from {@link createHmac} that reuses its imported key across signatures.
+ * from {@link createHmac} that binds the algorithm and key once.
  */
 export type SigningSecret = string | Hmac;
 
@@ -252,7 +252,7 @@ export const Signer = {
    * Signs the request and returns the raw signature bytes.
    *
    * `accessSecret` is either the secret itself or a keyed {@link Hmac} from
-   * {@link createHmac}, which reuses its imported key across calls and carries
+   * {@link createHmac}, which binds the algorithm and key once and carries
    * its own algorithm (`algorithm` is then ignored).
    *
    * @see {@link signToBase64} for the Base64-encoded variant.

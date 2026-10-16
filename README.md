@@ -6,7 +6,7 @@
 
 Galaxy-V2 request signing and pre-signed URLs for [Xiaomi Galaxy FDS](https://github.com/XiaoMi/galaxy-fds-sdk-java) (File Data Storage). It returns plain request objects (`{ url, method, headers }`) that you can pass directly to `fetch`.
 
-- Runs on Node.js, Cloudflare Workers, Vercel Edge, Deno and Bun. It uses only Web-standard APIs, with no `node:*` or `Buffer`.
+- Runs on Node.js, Cloudflare Workers, Vercel Edge, Deno and Bun. The bundle imports Web-standard APIs only, with no `node:*` or `Buffer`; when the runtime exposes `process.getBuiltinModule` (Node.js >= 22.3, Bun) signing uses the native `node:crypto` HMAC (roughly 2-3x faster), and Web Crypto everywhere else.
 - Covers all 57 operations of the official `galaxy-fds-sdk-java` client. URLs and signatures match the Java SDK byte-for-byte, checked by tests.
 - No runtime dependencies. Ships ESM and TypeScript declarations.
 
@@ -18,7 +18,7 @@ Galaxy-V2 request signing and pre-signed URLs for [Xiaomi Galaxy FDS](https://gi
 npm install galaxy-fds-signer
 ```
 
-Requires Node.js >= 22, or any runtime with `crypto.subtle`.
+Requires Node.js >= 22, or any runtime with `crypto.subtle` (on Node.js < 22.3 signing falls back to Web Crypto).
 
 ## Quick start
 

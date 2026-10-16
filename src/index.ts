@@ -2,8 +2,9 @@
  * Galaxy FDS signer.
  *
  * Galaxy-V2 request signing and pre-signed URLs for Xiaomi Galaxy FDS, ported
- * from the official `galaxy-fds-sdk-java`. Built on Web-standard APIs only, so
- * it runs on Node.js, Cloudflare Workers, Vercel Edge, Deno and Bun.
+ * from the official `galaxy-fds-sdk-java`. Built on Web-standard APIs, so it
+ * runs on Node.js, Cloudflare Workers, Vercel Edge, Deno and Bun; on Node.js
+ * and Bun it signs with the native `node:crypto` HMAC when available.
  *
  * ```ts
  * import { createSigner } from 'galaxy-fds-signer';

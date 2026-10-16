@@ -8,7 +8,7 @@ import {
 } from 'galaxy-fds-signer';
 ```
 
-Every function is asynchronous except `createSigner`, because Web Crypto is. Every type below is exported for TypeScript.
+Every function is asynchronous except `createSigner`: signing is promise-based on every runtime, even where the underlying HMAC is synchronous. Every type below is exported for TypeScript.
 
 - [`createSigner(options)`](#createsigneroptions)
 - [`signer.signRequest(input)`](#signersignrequestinput)
@@ -246,7 +246,7 @@ class GalaxyFDSSignerError extends Error {
 | `INVALID_URL` | input | `url` | An empty, relative or malformed `url` (including one with an unpaired surrogate), or `url` combined with `bucket` / `object` / `subResources` / `cdn` / `query` |
 | `INVALID_DATE` | input | `date` | `date` is not a valid `Date` |
 | `INVALID_EXPIRATION` | input | `expires`, `expiresIn` | An expiration that is not an integer, is in seconds instead of milliseconds, or is in the past; an `expiresIn` that is not positive, or so large the expiration overflows |
-| `CRYPTO_UNAVAILABLE` | runtime | | `globalThis.crypto.subtle` is missing |
+| `CRYPTO_UNAVAILABLE` | runtime | | No HMAC implementation is available: neither the native fast path (`process.getBuiltinModule('node:crypto')`) nor `globalThis.crypto.subtle` |
 | `SIGNING_FAILED` | runtime | | Any unexpected failure while signing; see `cause` |
 
 ```ts
