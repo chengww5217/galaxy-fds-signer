@@ -9,6 +9,7 @@ import {
   signRequest,
   SubResource,
 } from '../src/index.js';
+import { usePortableCrypto } from './portable-crypto.js';
 
 const ACCESS_ID = 'AKIDEXAMPLEACCESSID';
 const ACCESS_SECRET = 'wJalrXUtnFEMIK7MDENGbPxRfiCYEXAMPLEKEY';
@@ -364,6 +365,7 @@ describe('createSigner', () => {
 
 describe('HMAC key reuse', () => {
   it('a signer imports its key once, across signRequest and presign', async () => {
+    const restore = usePortableCrypto();
     const spy = vi.spyOn(globalThis.crypto.subtle, 'importKey');
     try {
       const s = createSigner({ ...OPTIONS, accessSecret: 'reuse-secret' });
@@ -376,6 +378,7 @@ describe('HMAC key reuse', () => {
       expect(spy).toHaveBeenCalledTimes(2);
     } finally {
       spy.mockRestore();
+      restore();
     }
   });
 });

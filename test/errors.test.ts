@@ -10,6 +10,7 @@ import {
   type GalaxyFDSSignerErrorKind,
   type SignerOptions,
 } from '../src/index.js';
+import { usePortableCrypto } from './portable-crypto.js';
 
 const OPTIONS: SignerOptions = {
   accessId: 'id',
@@ -397,8 +398,15 @@ describe('error codes', () => {
       undefined,
       'missing Web Crypto',
       () => {
-        vi.stubGlobal('crypto', undefined);
-        return signer.signRequest({ bucket: 'b' });
+        // A fresh signer, with both implementations hidden: the Node fast path
+        // is bound when the signer is created, so it must be stubbed first.
+        const restore = usePortableCrypto();
+        try {
+          vi.stubGlobal('crypto', undefined);
+          return createSigner(OPTIONS).signRequest({ bucket: 'b' });
+        } finally {
+          restore();
+        }
       },
     ],
     [
@@ -407,13 +415,18 @@ describe('error codes', () => {
       undefined,
       'Web Crypto failure',
       () => {
-        vi.stubGlobal('crypto', {
-          subtle: {
-            importKey: () => Promise.reject(new Error('boom')),
-          },
-        });
-        // A fresh signer: the shared one may already hold an imported key.
-        return createSigner(OPTIONS).signRequest({ bucket: 'b' });
+        const restore = usePortableCrypto();
+        try {
+          vi.stubGlobal('crypto', {
+            subtle: {
+              importKey: () => Promise.reject(new Error('boom')),
+            },
+          });
+          // A fresh signer: the shared one may already hold an imported key.
+          return createSigner(OPTIONS).signRequest({ bucket: 'b' });
+        } finally {
+          restore();
+        }
       },
     ],
   ];
@@ -430,10 +443,15 @@ describe('error codes', () => {
   });
 
   it('wraps unexpected errors with their cause', async () => {
+    const restore = usePortableCrypto();
     vi.stubGlobal('crypto', { subtle: { importKey: () => Promise.reject(new Error('boom')) } });
-    const err = await catchError(() => createSigner(OPTIONS).signRequest({ bucket: 'b' }));
-    expect(err.message).toBe('failed to sign request: boom');
-    expect((err.cause as Error).message).toBe('boom');
+    try {
+      const err = await catchError(() => createSigner(OPTIONS).signRequest({ bucket: 'b' }));
+      expect(err.message).toBe('failed to sign request: boom');
+      expect((err.cause as Error).message).toBe('boom');
+    } finally {
+      restore();
+    }
   });
 
   it('does not re-wrap its own errors', async () => {

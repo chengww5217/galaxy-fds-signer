@@ -5,6 +5,7 @@ import { describe, expect, it, vi } from 'vitest';
 import { createHmac as createKeyedHmac, hmac, toBase64 } from '../src/auth/crypto.js';
 import { hmacMd5, md5 } from '../src/auth/md5.js';
 import { SignAlgorithm } from '../src/index.js';
+import { hasNodeFastPath, stubGetBuiltinModule, usePortableCrypto } from './portable-crypto.js';
 
 const hex = (b: Uint8Array) => Buffer.from(b).toString('hex');
 
@@ -44,8 +45,9 @@ describe('hmac()', () => {
   });
 });
 
-describe('hmac key caching', () => {
+describe('hmac key caching (without the Node fast path)', () => {
   it('a keyed HMAC imports its key once and matches hmac()', async () => {
+    const restore = usePortableCrypto();
     const spy = vi.spyOn(globalThis.crypto.subtle, 'importKey');
     try {
       const mac = createKeyedHmac(SignAlgorithm.HmacSHA1, 'k');
@@ -56,10 +58,12 @@ describe('hmac key caching', () => {
       expect(toBase64(results[2])).toBe(toBase64(results[0]));
     } finally {
       spy.mockRestore();
+      restore();
     }
   });
 
   it('keeps no state between keyed HMACs or one-shot calls', async () => {
+    const restore = usePortableCrypto();
     const spy = vi.spyOn(globalThis.crypto.subtle, 'importKey');
     try {
       await hmac(SignAlgorithm.HmacSHA1, 'k', 'm');
@@ -68,20 +72,24 @@ describe('hmac key caching', () => {
       expect(spy).toHaveBeenCalledTimes(3);
     } finally {
       spy.mockRestore();
+      restore();
     }
   });
 
   it('HmacMD5 needs no Web Crypto', async () => {
+    const restore = usePortableCrypto();
     const mac = createKeyedHmac(SignAlgorithm.HmacMD5, 'k');
     vi.stubGlobal('crypto', undefined);
     try {
       expect(toBase64(await mac('m'))).toBe(createHmac('md5', 'k').update('m').digest('base64'));
     } finally {
       vi.unstubAllGlobals();
+      restore();
     }
   });
 
   it('retries after a failed import', async () => {
+    const restore = usePortableCrypto();
     const importKey = vi.fn(() => Promise.reject(new Error('boom')));
     vi.stubGlobal('crypto', { subtle: { importKey } });
     try {
@@ -91,6 +99,98 @@ describe('hmac key caching', () => {
       expect(importKey).toHaveBeenCalledTimes(2);
     } finally {
       vi.unstubAllGlobals();
+      restore();
+    }
+  });
+});
+
+describe('node:crypto fast path', () => {
+  it.skipIf(!hasNodeFastPath)('is used on Node.js', async () => {
+    const proc = (globalThis as { process: { getBuiltinModule: (id: string) => unknown } }).process;
+    const spy = vi.spyOn(proc, 'getBuiltinModule');
+    try {
+      await hmac(SignAlgorithm.HmacSHA1, 'k', 'm');
+      expect(spy).toHaveBeenCalledWith('node:crypto');
+    } finally {
+      spy.mockRestore();
+    }
+  });
+
+  it.skipIf(!hasNodeFastPath)('matches the portable path for every algorithm', async () => {
+    const key = 'clé-秘密';
+    const message = 'PUT\n\n\n日付\n/b/中文';
+    const fast = new Map<string, string>();
+    for (const algorithm of Object.values(SignAlgorithm)) {
+      fast.set(algorithm, toBase64(await hmac(algorithm, key, message)));
+    }
+    const restore = usePortableCrypto();
+    try {
+      for (const algorithm of Object.values(SignAlgorithm)) {
+        expect(toBase64(await hmac(algorithm, key, message))).toBe(fast.get(algorithm));
+        // The keyed variant picks its strategy at creation time, so it must
+        // agree as well after the fallback has been selected.
+        expect(toBase64(await createKeyedHmac(algorithm, key)(message))).toBe(fast.get(algorithm));
+      }
+    } finally {
+      restore();
+    }
+  });
+
+  it.skipIf(!hasNodeFastPath)('reuses a keyed HMAC across messages', async () => {
+    const mac = createKeyedHmac(SignAlgorithm.HmacSHA1, 'k');
+    const oracle = (m: string) => createHmac('sha1', 'k').update(m, 'utf-8').digest('base64');
+    // The probe Hmac serves the first message; the rest must sign with fresh
+    // ones, including when several calls are in flight at once.
+    const results = await Promise.all([mac('m1'), mac('m2'), mac('m3')]);
+    expect(results.map(toBase64)).toEqual(['m1', 'm2', 'm3'].map(oracle));
+    expect(toBase64(await mac('m4'))).toBe(oracle('m4'));
+  });
+
+  it('falls back when the native digest is unavailable (e.g. FIPS)', async () => {
+    const restore = stubGetBuiltinModule({
+      createHmac: () => {
+        throw new Error('digest disabled by policy');
+      },
+    });
+    try {
+      expect(toBase64(await hmac(SignAlgorithm.HmacMD5, 'k', 'm'))).toBe(
+        createHmac('md5', 'k').update('m', 'utf-8').digest('base64'),
+      );
+      expect(toBase64(await hmac(SignAlgorithm.HmacSHA1, 'k', 'm'))).toBe(
+        createHmac('sha1', 'k').update('m', 'utf-8').digest('base64'),
+      );
+    } finally {
+      restore();
+    }
+  });
+
+  it('ignores a getBuiltinModule that resolves to nothing usable', async () => {
+    const expected = createHmac('sha1', 'k').update('m', 'utf-8').digest('base64');
+    const hostile = new Proxy(
+      {},
+      {
+        get: () => {
+          throw new Error('locked down');
+        },
+      },
+    );
+    for (const module of [
+      null,
+      42,
+      {},
+      { createHmac: 'not a function' },
+      { createHmac: () => null },
+      { createHmac: () => undefined },
+      { createHmac: () => ({}) },
+      { createHmac: () => ({ update: () => 'nope', digest: 42 }) },
+      hostile,
+    ]) {
+      const restore = stubGetBuiltinModule(module);
+      try {
+        expect(toBase64(await hmac(SignAlgorithm.HmacSHA1, 'k', 'm'))).toBe(expected);
+      } finally {
+        restore();
+      }
     }
   });
 });
